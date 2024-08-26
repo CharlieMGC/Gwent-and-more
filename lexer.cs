@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
 
+public class LexerException : Exception
+{
+    public LexerException(string message) : base(message) { }
+}
+
 public static class Lexer
 {
     public static List<Token> Tokenizer(string texto)
@@ -71,6 +76,11 @@ public static class Lexer
                             tokens.Add(new Token(TokenType.PLUS_ASSIGN, "+="));
                             i++;
                         }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '+')
+                        {
+                            tokens.Add(new Token(TokenType.INCREMENT, "++"));
+                            i++;
+                        }
                         else
                         {
                             tokens.Add(new Token(TokenType.PLUS, c.ToString()));
@@ -82,36 +92,47 @@ public static class Lexer
                             tokens.Add(new Token(TokenType.MINUS_ASSIGN, "-="));
                             i++;
                         }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '-')
+                        {
+                            tokens.Add(new Token(TokenType.DECREMENT, "--"));
+                            i++;
+                        }
                         else
                         {
                             tokens.Add(new Token(TokenType.MINUS, c.ToString()));
                         }
                         break;
                     case '*':
-                        tokens.Add(new Token(TokenType.TIMES, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.TIMES_ASSIGN, "*="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.TIMES, c.ToString()));
+                        }
                         break;
                     case '/':
-                        if (i + 1 < texto.Length && texto[i + 1] == '/')
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
                         {
-                            string comment = "";
+                            tokens.Add(new Token(TokenType.DIVIDE_ASSIGN, "/="));
+                            i++;
+                        }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '/')
+                        {
                             while (i < texto.Length && texto[i] != '\n')
                             {
-                                comment += texto[i];
                                 i++;
                             }
-                            tokens.Add(new Token(TokenType.COMMENT, comment));
                         }
                         else if (i + 1 < texto.Length && texto[i + 1] == '*')
                         {
-                            string comment = "";
                             while (i < texto.Length && !(texto[i] == '*' && texto[i + 1] == '/'))
                             {
-                                comment += texto[i];
                                 i++;
                             }
-                            comment += "*/";
                             i += 2; // Saltar el cierre del comentario
-                            tokens.Add(new Token(TokenType.COMMENT, comment));
                         }
                         else
                         {
@@ -119,7 +140,15 @@ public static class Lexer
                         }
                         break;
                     case '%':
-                        tokens.Add(new Token(TokenType.MODULO, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.MODULO_ASSIGN, "%="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.MODULO, c.ToString()));
+                        }
                         break;
                     case '=':
                         if (i + 1 < texto.Length && texto[i + 1] == '=')
@@ -149,6 +178,19 @@ public static class Lexer
                             tokens.Add(new Token(TokenType.LESS_EQUAL, "<="));
                             i++;
                         }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '<')
+                        {
+                            if (i + 2 < texto.Length && texto[i + 2] == '=')
+                            {
+                                tokens.Add(new Token(TokenType.SHIFT_LEFT_ASSIGN, "<<="));
+                                i += 2;
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.SHIFT_LEFT, "<<"));
+                                i++;
+                            }
+                        }
                         else
                         {
                             tokens.Add(new Token(TokenType.LESS_THAN, c.ToString()));
@@ -160,16 +202,38 @@ public static class Lexer
                             tokens.Add(new Token(TokenType.GREATER_EQUAL, ">="));
                             i++;
                         }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '>')
+                        {
+                            if (i + 2 < texto.Length && texto[i + 2] == '=')
+                            {
+                                tokens.Add(new Token(TokenType.SHIFT_RIGHT_ASSIGN, ">>="));
+                                i += 2;
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(TokenType.SHIFT_RIGHT, ">>"));
+                                i++;
+                            }
+                        }
                         else
                         {
                             tokens.Add(new Token(TokenType.GREATER_THAN, c.ToString()));
                         }
                         break;
-                    case '&':
+                                        case '&':
                         if (i + 1 < texto.Length && texto[i + 1] == '&')
                         {
                             tokens.Add(new Token(TokenType.AND, "&&"));
                             i++;
+                        }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.AND_ASSIGN, "&="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.BIT_AND, c.ToString()));
                         }
                         break;
                     case '|':
@@ -178,6 +242,47 @@ public static class Lexer
                             tokens.Add(new Token(TokenType.OR, "||"));
                             i++;
                         }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.OR_ASSIGN, "|="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.BIT_OR, c.ToString()));
+                        }
+                        break;
+                    case '^':
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.XOR_ASSIGN, "^="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.BIT_XOR, c.ToString()));
+                        }
+                        break;
+                    case '~':
+                        tokens.Add(new Token(TokenType.BIT_NOT, c.ToString()));
+                        break;
+                    case '.':
+                        tokens.Add(new Token(TokenType.DOT, c.ToString()));
+                        break;
+                    case '?':
+                        tokens.Add(new Token(TokenType.QUESTION, c.ToString()));
+                        break;
+                    case '#':
+                        tokens.Add(new Token(TokenType.HASH, c.ToString()));
+                        break;
+                    case '$':
+                        tokens.Add(new Token(TokenType.DOLLAR, c.ToString()));
+                        break;
+                    case '\\':
+                        tokens.Add(new Token(TokenType.BACKSLASH, c.ToString()));
+                        break;
+                    case '`':
+                        tokens.Add(new Token(TokenType.BACKTICK, c.ToString()));
                         break;
                     case ',':
                         tokens.Add(new Token(TokenType.COMMA, c.ToString()));
@@ -206,14 +311,15 @@ public static class Lexer
                     case ']':
                         tokens.Add(new Token(TokenType.RBRACKET, c.ToString()));
                         break;
-                    default:
-                        tokens.Add(new Token(TokenType.ID, c.ToString()));
+                    case '\n':
+                        tokens.Add(new Token(TokenType.NEWLINE, c.ToString()));
                         break;
+                    default:
+                        throw new LexerException($"Token no reconocido: {c}");
                 }
                 i++;
             }
         }
-
         return tokens;
     }
 }

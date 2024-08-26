@@ -2,8 +2,13 @@ public enum TokenType
 {
     // Literales
     NUMBER,
+    FLOAT,
+    HEX_NUMBER,
+    BIN_NUMBER,
     STRING,
     CHARACTER,
+    BOOLEAN,
+    NULL,
 
     // Identificadores
     ID,
@@ -29,10 +34,36 @@ public enum TokenType
     TIMES_ASSIGN, // *=
     DIVIDE_ASSIGN, // /=
 
+    // Operadores de Incremento y Decremento
+    INCREMENT,  // ++
+    DECREMENT,  // --
+
+    // Operadores Bit a Bit
+    BIT_AND,    // &
+    BIT_OR,     // |
+    BIT_XOR,    // ^
+    BIT_NOT,    // ~
+    SHIFT_LEFT, // <<
+    SHIFT_RIGHT, // >>
+
+    // Otros Operadores de Asignación
+    MODULO_ASSIGN, // %=
+    AND_ASSIGN,    // &=
+    OR_ASSIGN,     // |=
+    XOR_ASSIGN,    // ^=
+    SHIFT_LEFT_ASSIGN, // <<=
+    SHIFT_RIGHT_ASSIGN, // >>=
+
     // Separadores
     COMMA,      // ,
     SEMICOLON,  // ;
     COLON,      // :
+    DOT,        // .
+    QUESTION,   // ?
+    HASH,       // #
+    DOLLAR,     // $
+    BACKSLASH,  // \
+    BACKTICK,   // `
 
     // Corchetes
     LPAREN,     // (
@@ -43,10 +74,16 @@ public enum TokenType
     RBRACKET,   // ]
 
     // Comentarios
-    COMMENT,    // // o /* ... */
+    COMMENT, // // o /* ... */
 
     // Palabras clave
-    KEYWORD,    // if, else, while, for, return, etc.
+    KEYWORD, // if, else, while, for, return, etc.
+
+    // Nueva línea
+    NEWLINE,
+
+    // Espacios en blanco
+    WHITESPACE,
 }
 
 public class Token

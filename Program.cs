@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System;
 using System.IO;
 using System.Collections.Generic;
 
@@ -6,7 +9,7 @@ class Program
 {
     static void Main()
     {
-        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt"; // Cambia esto a la ruta de tu archivo
+        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt";
         string texto = File.ReadAllText(rutaArchivo);
         var tokens = Lexer.Tokenizer(texto);
 

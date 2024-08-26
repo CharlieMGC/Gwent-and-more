@@ -1,1 +1,4 @@
-Name: "Dol"
+effect{
+       name: " Damage"
+      }
+

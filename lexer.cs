@@ -149,22 +149,118 @@ class Program
                 switch (c)
                 {
                     case '+':
-                        tokens.Add(new Token(TokenType.PLUS, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.PLUS_ASSIGN, "+="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.PLUS, c.ToString()));
+                        }
                         break;
                     case '-':
-                        tokens.Add(new Token(TokenType.MINUS, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.MINUS_ASSIGN, "-="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.MINUS, c.ToString()));
+                        }
                         break;
                     case '*':
                         tokens.Add(new Token(TokenType.TIMES, c.ToString()));
                         break;
                     case '/':
-                        tokens.Add(new Token(TokenType.DIVIDE, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '/')
+                        {
+                            string comment = "";
+                            while (i < texto.Length && texto[i] != '\n')
+                            {
+                                comment += texto[i];
+                                i++;
+                            }
+                            tokens.Add(new Token(TokenType.COMMENT, comment));
+                        }
+                        else if (i + 1 < texto.Length && texto[i + 1] == '*')
+                        {
+                            string comment = "";
+                            while (i < texto.Length && !(texto[i] == '*' && texto[i + 1] == '/'))
+                            {
+                                comment += texto[i];
+                                i++;
+                            }
+                            comment += "*/";
+                            i += 2; // Saltar el cierre del comentario
+                            tokens.Add(new Token(TokenType.COMMENT, comment));
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.DIVIDE, c.ToString()));
+                        }
                         break;
                     case '%':
                         tokens.Add(new Token(TokenType.MODULO, c.ToString()));
                         break;
                     case '=':
-                        tokens.Add(new Token(TokenType.ASSIGN, c.ToString()));
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.EQUAL, "=="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.ASSIGN, c.ToString()));
+                        }
+                        break;
+                    case '!':
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.NOT_EQUAL, "!="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.NOT, c.ToString()));
+                        }
+                        break;
+                    case '<':
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.LESS_EQUAL, "<="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.LESS_THAN, c.ToString()));
+                        }
+                        break;
+                    case '>':
+                        if (i + 1 < texto.Length && texto[i + 1] == '=')
+                        {
+                            tokens.Add(new Token(TokenType.GREATER_EQUAL, ">="));
+                            i++;
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.GREATER_THAN, c.ToString()));
+                        }
+                        break;
+                    case '&':
+                        if (i + 1 < texto.Length && texto[i + 1] == '&')
+                        {
+                            tokens.Add(new Token(TokenType.AND, "&&"));
+                            i++;
+                        }
+                        break;
+                    case '|':
+                        if (i + 1 < texto.Length && texto[i + 1] == '|')
+                        {
+                            tokens.Add(new Token(TokenType.OR, "||"));
+                            i++;
+                        }
                         break;
                     case ',':
                         tokens.Add(new Token(TokenType.COMMA, c.ToString()));

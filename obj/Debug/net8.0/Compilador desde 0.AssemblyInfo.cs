@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Compilador desde 0")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21f2cddb7165a21a8a1b443754155a911c83ad41")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+668431826a08d7507396d0b4d46ddd4594034449")]
 [assembly: System.Reflection.AssemblyProductAttribute("Compilador desde 0")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Compilador desde 0")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

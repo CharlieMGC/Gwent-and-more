@@ -1,6 +1,16 @@
-45 'm'  k carga 
-"hola mundo"
-effect {
-       name: "Damage"
-      }
+int main() {
+    int a = 5;
+    float b = 3.14;
+    char c = 'x';
+    string s = "Hola, mundo!";
+    if (a < b) {
+        a += 1;
+    } else {
+        b -= 1;
+    }
+    // Esto es un comentario
+    /* Esto es un comentario
+       de múltiples líneas */
+    return 0;
+}
 

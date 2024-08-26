@@ -72,18 +72,12 @@ public enum TokenType
     RBRACE,     // }
     LBRACKET,   // [
     RBRACKET,   // ]
-
-    // Comentarios
-    COMMENT, // // o /* ... */
-
+    
     // Palabras clave
     KEYWORD, // if, else, while, for, return, etc.
 
     // Nueva línea
     NEWLINE,
-
-    // Espacios en blanco
-    WHITESPACE,
 }
 
 public class Token

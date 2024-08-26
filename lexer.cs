@@ -40,6 +40,17 @@ public static class Lexer
         { "void", TokenType.KEYWORD }, { "string", TokenType.KEYWORD }
     };
 
+    private static readonly Dictionary<string, TokenType> multiCharTokens = new Dictionary<string, TokenType>
+    {
+        { "==", TokenType.EQUAL }, { "!=", TokenType.NOT_EQUAL }, { "<=", TokenType.LESS_EQUAL },
+        { ">=", TokenType.GREATER_EQUAL }, { "&&", TokenType.AND }, { "||", TokenType.OR },
+        { "+=", TokenType.PLUS_ASSIGN }, { "-=", TokenType.MINUS_ASSIGN }, { "*=", TokenType.TIMES_ASSIGN },
+        { "/=", TokenType.DIVIDE_ASSIGN }, { "++", TokenType.INCREMENT }, { "--", TokenType.DECREMENT },
+        { "%=", TokenType.MODULO_ASSIGN }, { "&=", TokenType.AND_ASSIGN }, { "|=", TokenType.OR_ASSIGN },
+        { "^=", TokenType.XOR_ASSIGN }, { "<<", TokenType.SHIFT_LEFT }, { ">>", TokenType.SHIFT_RIGHT },
+        { "<<=", TokenType.SHIFT_LEFT_ASSIGN }, { ">>=", TokenType.SHIFT_RIGHT_ASSIGN }
+    };
+
     public static List<Token> Tokenizer(string texto)
     {
         texto = Preprocess(texto);
@@ -82,6 +93,11 @@ public static class Lexer
                     {
                         state = State.Comment;
                         i++; // Saltar el siguiente '/'
+                    }
+                    else if (i + 1 < buffer.Length && multiCharTokens.ContainsKey($"{c}{buffer[i + 1]}"))
+                    {
+                        tokens.Add(new Token(multiCharTokens[$"{c}{buffer[i + 1]}"], $"{c}{buffer[i + 1]}"));
+                        i++; // Saltar el siguiente carácter
                     }
                     else if (singleCharTokens.ContainsKey(c))
                     {

@@ -1,17 +1,50 @@
-
 int main() {
-    int a = 5;
-    float b = 3.14;
+    // Declaración de variables
+    int a = 10;
+    float b = 20.5;
     char c = 'x';
-    string s = "Hola, mundo!";
-    if (a < b) {
-        a += 1;
-    } else {
-        b -= 1;
+    bool flag = true;
+    string str = "Hello, World!";
+    int hex = 0x1A;
+    int bin = 0b1010;
+
+    // Operaciones aritméticas
+    a = a + 1;
+    b = b - 2.5;
+    a *= 2;
+    b /= 3.0;
+    a %= 3;
+
+    // Operaciones de comparación
+    if (a == 10 && b != 0.0) {
+        flag = false;
+    } else if (a < 20 || b > 10.0) {
+        flag = true;
     }
-    // Esto es un comentario
-    /* Esto es un comentario
-       de múltiples líneas */
+
+    // Operadores bit a bit
+    a &= 0xFF;
+    a |= 0x0F;
+    a ^= 0xF0;
+    a <<= 2;
+    a >>= 1;
+
+    // Operadores de incremento y decremento
+    a++;
+    b--;
+
+    // Otros operadores de asignación
+    a += 5;
+    b -= 1.5;
+    a *= 3;
+    b /= 2.0;
+    a %= 4;
+
+    // Separadores y corchetes
+    for (int i = 0; i < 10; i++) {
+        str += "!";
+    }
+
+    // Palabras clave
     return 0;
-    
-}#
+}

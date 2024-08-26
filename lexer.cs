@@ -75,7 +75,7 @@ class Program
 {
     static void Main()
     {
-        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt"; 
+        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt"; // Cambia esto a la ruta de tu archivo
         string texto = File.ReadAllText(rutaArchivo);
         var tokens = Lexer(texto);
 
@@ -109,6 +109,30 @@ class Program
                     i++;
                 }
                 tokens.Add(new Token(TokenType.NUMBER, number));
+            }
+            else if (c == '"')
+            {
+                string str = "";
+                i++; // Saltar la comilla inicial
+                while (i < texto.Length && texto[i] != '"')
+                {
+                    str += texto[i];
+                    i++;
+                }
+                i++; // Saltar la comilla final
+                tokens.Add(new Token(TokenType.STRING, str));
+            }
+            else if (c == '\'')
+            {
+                string character = "";
+                i++; // Saltar la comilla inicial
+                while (i < texto.Length && texto[i] != '\'')
+                {
+                    character += texto[i];
+                    i++;
+                }
+                i++; // Saltar la comilla final
+                tokens.Add(new Token(TokenType.CHARACTER, character));
             }
             else if (char.IsLetter(c))
             {

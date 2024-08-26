@@ -1,4 +1,6 @@
-effect{
-       name: " Damage"
+45 'm'  k carga 
+"hola mundo"
+effect {
+       name: "Damage"
       }
 

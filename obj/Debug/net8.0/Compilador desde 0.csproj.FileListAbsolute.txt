@@ -12,3 +12,4 @@ D:\Compilador desde 0\obj\Debug\net8.0\refint\Compilador desde 0.dll
 D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.pdb
 D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.genruntimeconfig.cache
 D:\Compilador desde 0\obj\Debug\net8.0\ref\Compilador desde 0.dll
+D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.sourcelink.json

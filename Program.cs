@@ -1,22 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
-class Program
+public class Program
 {
-    static void Main(string[] args)
+    public static void Main()
     {
-        string filePath = @"D:\Compilador desde 0\newtest.txt";
-        
-        if (File.Exists(filePath))
+        var lexer = new Lexer();
+
+        // Leer el texto de entrada desde un archivo
+        string filePath = @"D:\Compilador desde 0\newtest.txt"; 
+        string text = File.ReadAllText(filePath);
+
+        var tokens = lexer.Tokenize(text);
+
+        // Imprimir la lista de tokens en la consola
+        Console.WriteLine("Tokens generados:");
+        foreach (var token in tokens)
         {
-            string content = File.ReadAllText(filePath);
-            Console.WriteLine("Contenido del archivo:");
-            Console.WriteLine(content);
-        }
-        else
-        {
-            Console.WriteLine("El archivo no existe.");
+            Console.WriteLine(token);
         }
     }
-
 }
+

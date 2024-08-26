@@ -41,7 +41,7 @@ public class Lexer
                 var matchResult = regex.Match(text, position);
                 if (matchResult.Success && matchResult.Index == position)
                 {
-                    if (type != TokenType.WHITESPACE) // Ignorar espacios en blanco
+                    if (type != TokenType.WHITESPACE)
                     {
                         match = new Token(type, matchResult.Value);
                         tokens.Add(match);
@@ -53,14 +53,7 @@ public class Lexer
 
             if (match == null)
             {
-                int start = position;
-                while (position < text.Length && !_tokenDefinitions.Any(td => td.Item2.IsMatch(text[position].ToString())))
-                {
-                    position++;
-                }
-                var unknownValue = text.Substring(start, position - start);
-                var unknownToken = new Token(TokenType.UNKNOWN, unknownValue);
-                tokens.Add(unknownToken);
+                throw new Exception($"I can't understand what you wrote here dude {position}: {text[position]}");
             }
         }
 

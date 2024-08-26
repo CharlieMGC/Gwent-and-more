@@ -1,19 +1,58 @@
 public enum TokenType
 {
+    // Literales
     NUMBER,
+    STRING,
+    CHARACTER,
+
+    // Identificadores
     ID,
-    PLUS,
-    MINUS,
-    TIMES,
-    DIVIDE,
-    LPAREN,
-    RPAREN,
+
+    // Operadores
+    PLUS,       // +
+    MINUS,      // -
+    TIMES,      // *
+    DIVIDE,     // /
+    MODULO,     // %
+    EQUAL,      // ==
+    NOT_EQUAL,  // !=
+    LESS_THAN,  // <
+    GREATER_THAN, // >
+    LESS_EQUAL, // <=
+    GREATER_EQUAL, // >=
+    AND,        // &&
+    OR,         // ||
+    NOT,        // !
+    ASSIGN,     // =
+    PLUS_ASSIGN, // +=
+    MINUS_ASSIGN, // -=
+    TIMES_ASSIGN, // *=
+    DIVIDE_ASSIGN, // /=
+
+    // Separadores
+    COMMA,      // ,
+    SEMICOLON,  // ;
+    COLON,      // :
+
+    // Corchetes
+    LPAREN,     // (
+    RPAREN,     // )
+    LBRACE,     // {
+    RBRACE,     // }
+    LBRACKET,   // [
+    RBRACKET,   // ]
+
+    // Comentarios
+    COMMENT,    // // o /* ... */
+
+    // Espacios en blanco
     WHITESPACE,
-    LBRACE,
-    RBRACE,
-    COLON,
-    QUOTE,
-    UNKNOWN // Nuevo tipo de token
+
+    // Palabras clave
+    KEYWORD,    // if, else, while, for, return, etc.
+
+    // Desconocido
+    UNKNOWN
 }
 
 public class Token

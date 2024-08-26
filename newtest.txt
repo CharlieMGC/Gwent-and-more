@@ -1,10 +1,6 @@
-5455
-45
-45
-5453
-effect{
-        name:" DrawCard"
+effect {
+        name:" Draw Card "
 
       }
-$#%#^&&*&^%##^&^%GGFJFGHJFHDJHFZDHSGFGNCHGFNGXJHGXXMGJ
+
 

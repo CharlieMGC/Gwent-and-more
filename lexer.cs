@@ -1,92 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
 
-public enum TokenType
+public static class Lexer
 {
-    // Literales
-    NUMBER,
-    STRING,
-    CHARACTER,
-
-    // Identificadores
-    ID,
-
-    // Operadores
-    PLUS,       // +
-    MINUS,      // -
-    TIMES,      // *
-    DIVIDE,     // /
-    MODULO,     // %
-    EQUAL,      // ==
-    NOT_EQUAL,  // !=
-    LESS_THAN,  // <
-    GREATER_THAN, // >
-    LESS_EQUAL,  // <=
-    GREATER_EQUAL, // >=
-    AND,        // &&
-    OR,         // ||
-    NOT,        // !
-    ASSIGN,     // =
-    PLUS_ASSIGN, // +=
-    MINUS_ASSIGN, // -=
-    TIMES_ASSIGN, // *=
-    DIVIDE_ASSIGN, // /=
-
-    // Separadores
-    COMMA,      // ,
-    SEMICOLON,  // ;
-    COLON,      // :
-
-    // Corchetes
-    LPAREN,     // (
-    RPAREN,     // )
-    LBRACE,     // {
-    RBRACE,     // }
-    LBRACKET,   // [
-    RBRACKET,   // ]
-
-    // Comentarios
-    COMMENT,    // // o /* ... */
-
-    // Palabras clave
-    KEYWORD,    // if, else, while, for, return, etc.
-}
-
-public class Token
-{
-    public TokenType Type { get; }
-    public string Value { get; }
-
-    public Token(TokenType type, string value)
-    {
-        Type = type;
-        Value = value;
-    }
-
-    public override string ToString()
-    {
-        return $"{Type}: {Value}";
-    }
-}
-
-class Program
-{
-    static void Main()
-    {
-        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt"; // Cambia esto a la ruta de tu archivo
-        string texto = File.ReadAllText(rutaArchivo);
-        var tokens = Lexer(texto);
-
-        Console.WriteLine("Tokens:");
-        foreach (var token in tokens)
-        {
-            Console.WriteLine(token);
-        }
-    }
-
-    static List<Token> Lexer(string texto)
+    public static List<Token> Tokenizer(string texto)
     {
         List<Token> tokens = new List<Token>();
         int i = 0;

@@ -90,10 +90,11 @@ public class Lexer
 
             if (match == null)
             {
-                throw new Exception($"I can't understand what you wrote here dude {position}: {text[position]}");
+                throw new Exception($"No entiendo esto aquí {position}: {text[position]}");
             }
         }
 
         return tokens;
     }
 }
+

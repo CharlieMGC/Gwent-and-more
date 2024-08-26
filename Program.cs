@@ -8,18 +8,28 @@ public class Program
     {
         var lexer = new Lexer();
 
-        // Leer el texto de entrada desde un archivo
-        string filePath = @"D:\Compilador desde 0\newtest.txt"; 
+        string filePath = @"D:\Compilador desde 0\newtest.txt";
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"El archivo no existe: {filePath}");
+            return;
+        }
+
         string text = File.ReadAllText(filePath);
 
-        var tokens = lexer.Tokenize(text);
-
-        // Imprimir la lista de tokens en la consola
-        Console.WriteLine("Tokens generados:");
-        foreach (var token in tokens)
+        try
         {
-            Console.WriteLine(token);
+            var tokens = lexer.Tokenize(text);
+
+            Console.WriteLine("Tokens generados:");
+            foreach (var token in tokens)
+            {
+                Console.WriteLine(token);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 }
-

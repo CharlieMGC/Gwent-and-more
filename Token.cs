@@ -9,6 +9,8 @@ public enum TokenType
     CHARACTER,
     BOOLEAN,
     NULL,
+    TRUE,
+    FALSE,
 
     // Identificadores
     ID,
@@ -78,21 +80,27 @@ public enum TokenType
 
     // Nueva línea
     NEWLINE,
+
+    EOF,
 }
 
 public class Token
 {
     public TokenType Type { get; }
-    public string Value { get; }
+    public string Lexeme { get; }
+    public object? Literal { get; }
+    public int Line { get; }
 
-    public Token(TokenType type, string value)
+    public Token(TokenType type, string lexeme, object? literal, int line)
     {
         Type = type;
-        Value = value;
+        Lexeme = lexeme;
+        Literal = literal;
+        Line = line;
     }
 
     public override string ToString()
     {
-        return $"{Type}: {Value}";
+        return $"{Type}: {Lexeme}";
     }
 }

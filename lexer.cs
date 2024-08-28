@@ -59,6 +59,7 @@ public static class Lexer
         State state = State.Start;
         StringBuilder currentToken = new StringBuilder();
         char[] buffer = texto.ToCharArray();
+        int line = 1;
 
         while (i < buffer.Length)
         {
@@ -79,7 +80,7 @@ public static class Lexer
                     }
                     else if (char.IsWhiteSpace(c))
                     {
-                        // Ignorar espacios en blanco
+                        if (c == '\n') line++;
                     }
                     else if (c == '"')
                     {
@@ -96,12 +97,12 @@ public static class Lexer
                     }
                     else if (i + 1 < buffer.Length && multiCharTokens.ContainsKey($"{c}{buffer[i + 1]}"))
                     {
-                        tokens.Add(new Token(multiCharTokens[$"{c}{buffer[i + 1]}"], $"{c}{buffer[i + 1]}"));
+                        tokens.Add(new Token(multiCharTokens[$"{c}{buffer[i + 1]}"], $"{c}{buffer[i + 1]}", string.Empty, line));
                         i++; // Saltar el siguiente carácter
                     }
                     else if (singleCharTokens.ContainsKey(c))
                     {
-                        tokens.Add(new Token(singleCharTokens[c], c.ToString()));
+                        tokens.Add(new Token(singleCharTokens[c], c.ToString(), string.Empty, line));
                     }
                     else
                     {
@@ -117,7 +118,7 @@ public static class Lexer
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString()));
+                        tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line));
                         currentToken.Clear();
                         state = State.Start;
                         continue; // Reprocesar el carácter actual
@@ -133,7 +134,7 @@ public static class Lexer
                     else
                     {
                         string id = currentToken.ToString();
-                        tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id));
+                        tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id, string.Empty, line));
                         currentToken.Clear();
                         state = State.Start;
                         continue; // Reprocesar el carácter actual
@@ -148,7 +149,7 @@ public static class Lexer
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.STRING, currentToken.ToString()));
+                        tokens.Add(new Token(TokenType.STRING, currentToken.ToString(), currentToken.ToString(), line));
                         currentToken.Clear();
                         state = State.Start;
                     }
@@ -162,7 +163,7 @@ public static class Lexer
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString()));
+                        tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString(), currentToken.ToString(), line));
                         currentToken.Clear();
                         state = State.Start;
                     }
@@ -173,6 +174,7 @@ public static class Lexer
                     if (c == '\n')
                     {
                         state = State.Start;
+                        line++;
                     }
                     i++;
                     break;
@@ -187,11 +189,11 @@ public static class Lexer
             switch (state)
             {
                 case State.Number:
-                    tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString()));
+                    tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line));
                     break;
                 case State.Identifier:
                     string id = currentToken.ToString();
-                    tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id));
+                    tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id, string.Empty, line));
                     break;
                 case State.String:
                     throw new LexerException("Cadena sin cerrar");
@@ -200,6 +202,7 @@ public static class Lexer
             }
         }
 
+        tokens.Add(new Token(TokenType.EOF, "", string.Empty, line));
         return tokens;
     }
 

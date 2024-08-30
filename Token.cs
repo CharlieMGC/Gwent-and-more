@@ -1,3 +1,5 @@
+using System;
+
 public enum TokenType
 {
     // Literales
@@ -7,34 +9,45 @@ public enum TokenType
     BIN_NUMBER,
     STRING,
     CHARACTER,
-    BOOLEAN,
-    NULL,
     TRUE,
     FALSE,
+    NULL,
 
     // Identificadores
     ID,
 
-    // Operadores
+    // Operadores aritméticos
     PLUS,       // +
     MINUS,      // -
     TIMES,      // *
     DIVIDE,     // /
     MODULO,     // %
+
+    // Operadores de comparación
     EQUAL,      // ==
     NOT_EQUAL,  // !=
     LESS_THAN,  // <
     GREATER_THAN, // >
     LESS_EQUAL,  // <=
     GREATER_EQUAL, // >=
+
+    // Operadores lógicos
     AND,        // &&
     OR,         // ||
     NOT,        // !
+
+    // Operadores de asignación
     ASSIGN,     // =
     PLUS_ASSIGN, // +=
     MINUS_ASSIGN, // -=
     TIMES_ASSIGN, // *=
     DIVIDE_ASSIGN, // /=
+    MODULO_ASSIGN, // %=
+    AND_ASSIGN,    // &=
+    OR_ASSIGN,     // |=
+    XOR_ASSIGN,    // ^=
+    SHIFT_LEFT_ASSIGN, // <<=
+    SHIFT_RIGHT_ASSIGN, // >>=
 
     // Operadores de Incremento y Decremento
     INCREMENT,  // ++
@@ -47,14 +60,6 @@ public enum TokenType
     BIT_NOT,    // ~
     SHIFT_LEFT, // <<
     SHIFT_RIGHT, // >>
-
-    // Otros Operadores de Asignación
-    MODULO_ASSIGN, // %=
-    AND_ASSIGN,    // &=
-    OR_ASSIGN,     // |=
-    XOR_ASSIGN,    // ^=
-    SHIFT_LEFT_ASSIGN, // <<=
-    SHIFT_RIGHT_ASSIGN, // >>=
 
     // Separadores
     COMMA,      // ,
@@ -74,13 +79,25 @@ public enum TokenType
     RBRACE,     // }
     LBRACKET,   // [
     RBRACKET,   // ]
-    
+
     // Palabras clave
-    KEYWORD, // if, else, while, for, return, etc.
+    IF,
+    ELSE,
+    WHILE,
+    FOR,
+    RETURN,
+    FUN,        // Function declaration
+    TYPE,       // int, float, char, bool, void, string
 
-    // Nueva línea
+    // Control de flujo
+    BREAK,
+    CONTINUE,
+    SWITCH,
+    CASE,
+    DEFAULT,
+
+    // Otros
     NEWLINE,
-
     EOF,
 }
 
@@ -90,17 +107,19 @@ public class Token
     public string Lexeme { get; }
     public object? Literal { get; }
     public int Line { get; }
+    public int Column { get; }
 
-    public Token(TokenType type, string lexeme, object? literal, int line)
+    public Token(TokenType type, string lexeme, object? literal, int line, int column)
     {
         Type = type;
         Lexeme = lexeme;
         Literal = literal;
         Line = line;
+        Column = column;
     }
 
     public override string ToString()
     {
-        return $"{Type}: {Lexeme}";
+        return $"{Type} {Lexeme} {Literal} (Line: {Line}, Column: {Column})";
     }
 }

@@ -19,7 +19,7 @@ class Program
             return;
         }
 
-        var tokens = Lexer.Tokenizer(texto);
+        var tokens = Lexer.Tokenize(texto);
 
         Console.WriteLine("Tokens:");
         foreach (var token in tokens)
@@ -61,10 +61,10 @@ class Program
             case BinaryExpression binary:
                 PrintAST(binary.Left, indent + 2);
                 Console.WriteLine(indentString + "  " + binary.Operator.Type);
-                PrintAST(binary.Right, indent + 2);
+                                PrintAST(binary.Right, indent + 2);
                 break;
             case LiteralExpression literal:
-                Console.WriteLine(indentString + "  " + literal.Value.Lexeme);
+                Console.WriteLine(indentString + "  " + literal.Value);
                 break;
             case VariableExpression variable:
                 Console.WriteLine(indentString + "  " + variable.Name.Lexeme);
@@ -81,6 +81,57 @@ class Program
                 Console.WriteLine(indentString + "  Name: " + variableDeclaration.Name.Lexeme);
                 Console.WriteLine(indentString + "  Initializer:");
                 PrintAST(variableDeclaration.Initializer, indent + 2);
+                break;
+            case FunctionDeclaration functionDeclaration:
+                Console.WriteLine(indentString + "  Function: " + functionDeclaration.Name.Lexeme);
+                Console.WriteLine(indentString + "  Parameters:");
+                foreach (var param in functionDeclaration.Parameters)
+                {
+                    PrintAST(param, indent + 2);
+                }
+                Console.WriteLine(indentString + "  Body:");
+                PrintAST(functionDeclaration.Body, indent + 2);
+                break;
+            case ExpressionStatement expressionStatement:
+                PrintAST(expressionStatement.Expression, indent + 2);
+                break;
+            case IfStatement ifStatement:
+                Console.WriteLine(indentString + "  Condition:");
+                PrintAST(ifStatement.Condition, indent + 2);
+                Console.WriteLine(indentString + "  Then:");
+                PrintAST(ifStatement.ThenBranch, indent + 2);
+                if (ifStatement.ElseBranch != null)
+                {
+                    Console.WriteLine(indentString + "  Else:");
+                    PrintAST(ifStatement.ElseBranch, indent + 2);
+                }
+                break;
+            case WhileStatement whileStatement:
+                Console.WriteLine(indentString + "  Condition:");
+                PrintAST(whileStatement.Condition, indent + 2);
+                Console.WriteLine(indentString + "  Body:");
+                PrintAST(whileStatement.Body, indent + 2);
+                break;
+            case ForStatement forStatement:
+                Console.WriteLine(indentString + "  Initializer:");
+                PrintAST(forStatement.Initializer, indent + 2);
+                Console.WriteLine(indentString + "  Condition:");
+                PrintAST(forStatement.Condition, indent + 2);
+                Console.WriteLine(indentString + "  Increment:");
+                PrintAST(forStatement.Increment, indent + 2);
+                Console.WriteLine(indentString + "  Body:");
+                PrintAST(forStatement.Body, indent + 2);
+                break;
+            case BlockStatement blockStatement:
+                Console.WriteLine(indentString + "  Block:");
+                foreach (var stmt in blockStatement.Statements)
+                {
+                    PrintAST(stmt, indent + 2);
+                }
+                break;
+            case ReturnStatement returnStatement:
+                Console.WriteLine(indentString + "  Return:");
+                PrintAST(returnStatement.Value, indent + 2);
                 break;
             default:
                 Console.WriteLine(indentString + "  Nodo no reconocido");

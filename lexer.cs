@@ -20,46 +20,64 @@ public static class Lexer
         Done
     }
 
-    private static readonly Dictionary<char, TokenType> singleCharTokens = new Dictionary<char, TokenType>
-    {
-        { '+', TokenType.PLUS }, { '-', TokenType.MINUS }, { '*', TokenType.TIMES }, { '/', TokenType.DIVIDE },
-        { '%', TokenType.MODULO }, { '=', TokenType.ASSIGN }, { '!', TokenType.NOT }, { '<', TokenType.LESS_THAN },
-        { '>', TokenType.GREATER_THAN }, { '&', TokenType.BIT_AND }, { '|', TokenType.BIT_OR }, { '^', TokenType.BIT_XOR },
-        { '~', TokenType.BIT_NOT }, { '.', TokenType.DOT }, { '?', TokenType.QUESTION }, { '#', TokenType.HASH },
-        { '$', TokenType.DOLLAR }, { '\\', TokenType.BACKSLASH }, { '`', TokenType.BACKTICK }, { ',', TokenType.COMMA },
-        { ';', TokenType.SEMICOLON }, { ':', TokenType.COLON }, { '(', TokenType.LPAREN }, { ')', TokenType.RPAREN },
-        { '{', TokenType.LBRACE }, { '}', TokenType.RBRACE }, { '[', TokenType.LBRACKET }, { ']', TokenType.RBRACKET },
-        { '\n', TokenType.NEWLINE }
-    };
-
     private static readonly Dictionary<string, TokenType> keywords = new Dictionary<string, TokenType>
     {
-        { "if", TokenType.KEYWORD }, { "else", TokenType.KEYWORD }, { "while", TokenType.KEYWORD },
-        { "for", TokenType.KEYWORD }, { "return", TokenType.KEYWORD }, { "int", TokenType.KEYWORD },
-        { "float", TokenType.KEYWORD }, { "char", TokenType.KEYWORD }, { "bool", TokenType.KEYWORD },
-        { "void", TokenType.KEYWORD }, { "string", TokenType.KEYWORD }
+        { "if", TokenType.IF },
+        { "else", TokenType.ELSE },
+        { "while", TokenType.WHILE },
+        { "for", TokenType.FOR },
+        { "return", TokenType.RETURN },
+        { "int", TokenType.TYPE },
+        { "float", TokenType.TYPE },
+        { "char", TokenType.TYPE },
+        { "bool", TokenType.TYPE },
+        { "void", TokenType.TYPE },
+        { "string", TokenType.TYPE },
+        { "true", TokenType.TRUE },
+        { "false", TokenType.FALSE },
+        { "null", TokenType.NULL },
+        { "break", TokenType.BREAK },
+        { "continue", TokenType.CONTINUE },
+        { "switch", TokenType.SWITCH },
+        { "case", TokenType.CASE },
+        { "default", TokenType.DEFAULT },
+        { "fun", TokenType.FUN }
     };
 
     private static readonly Dictionary<string, TokenType> multiCharTokens = new Dictionary<string, TokenType>
     {
-        { "==", TokenType.EQUAL }, { "!=", TokenType.NOT_EQUAL }, { "<=", TokenType.LESS_EQUAL },
-        { ">=", TokenType.GREATER_EQUAL }, { "&&", TokenType.AND }, { "||", TokenType.OR },
-        { "+=", TokenType.PLUS_ASSIGN }, { "-=", TokenType.MINUS_ASSIGN }, { "*=", TokenType.TIMES_ASSIGN },
-        { "/=", TokenType.DIVIDE_ASSIGN }, { "++", TokenType.INCREMENT }, { "--", TokenType.DECREMENT },
-        { "%=", TokenType.MODULO_ASSIGN }, { "&=", TokenType.AND_ASSIGN }, { "|=", TokenType.OR_ASSIGN },
-        { "^=", TokenType.XOR_ASSIGN }, { "<<", TokenType.SHIFT_LEFT }, { ">>", TokenType.SHIFT_RIGHT },
-        { "<<=", TokenType.SHIFT_LEFT_ASSIGN }, { ">>=", TokenType.SHIFT_RIGHT_ASSIGN }
+        { "==", TokenType.EQUAL },
+        { "!=", TokenType.NOT_EQUAL },
+        { "<=", TokenType.LESS_EQUAL },
+        { ">=", TokenType.GREATER_EQUAL },
+        { "&&", TokenType.AND },
+        { "||", TokenType.OR },
+        { "+=", TokenType.PLUS_ASSIGN },
+        { "-=", TokenType.MINUS_ASSIGN },
+        { "*=", TokenType.TIMES_ASSIGN },
+        { "/=", TokenType.DIVIDE_ASSIGN },
+        { "%=", TokenType.MODULO_ASSIGN },
+        { "&=", TokenType.AND_ASSIGN },
+        { "|=", TokenType.OR_ASSIGN },
+        { "^=", TokenType.XOR_ASSIGN },
+        { "<<=", TokenType.SHIFT_LEFT_ASSIGN },
+        { ">>=", TokenType.SHIFT_RIGHT_ASSIGN },
+        { "++", TokenType.INCREMENT },
+        { "--", TokenType.DECREMENT },
+        { "<<", TokenType.SHIFT_LEFT },
+        { ">>", TokenType.SHIFT_RIGHT }
     };
 
-    public static List<Token> Tokenizer(string texto)
+    public static List<Token> Tokenize(string text)
     {
-        texto = Preprocess(texto);
+        text = Preprocess(text);
         List<Token> tokens = new List<Token>();
         int i = 0;
         State state = State.Start;
         StringBuilder currentToken = new StringBuilder();
-        char[] buffer = texto.ToCharArray();
+        char[] buffer = text.ToCharArray();
         int line = 1;
+        int column = 1;
 
         while (i < buffer.Length)
         {
@@ -68,7 +86,21 @@ public static class Lexer
             switch (state)
             {
                 case State.Start:
-                    if (char.IsLetter(c))
+                    if (char.IsWhiteSpace(c))
+                    {
+                        if (c == '\n')
+                        {
+                            line++;
+                            column = 1;
+                        }
+                        else
+                        {
+                            column++;
+                        }
+                        i++;
+                        continue;
+                    }
+                    if (char.IsLetter(c) || c == '_')
                     {
                         state = State.Identifier;
                         currentToken.Append(c);
@@ -78,96 +110,111 @@ public static class Lexer
                         state = State.Number;
                         currentToken.Append(c);
                     }
-                    else if (char.IsWhiteSpace(c))
-                    {
-                        if (c == '\n') line++;
-                    }
                     else if (c == '"')
                     {
                         state = State.String;
+                        currentToken.Append(c);
                     }
                     else if (c == '\'')
                     {
                         state = State.Character;
+                        currentToken.Append(c);
                     }
                     else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '/')
                     {
                         state = State.Comment;
-                        i++; // Saltar el siguiente '/'
+                        i++; // Skip next '/'
                     }
                     else if (i + 1 < buffer.Length && multiCharTokens.ContainsKey($"{c}{buffer[i + 1]}"))
                     {
-                        tokens.Add(new Token(multiCharTokens[$"{c}{buffer[i + 1]}"], $"{c}{buffer[i + 1]}", string.Empty, line));
-                        i++; // Saltar el siguiente carácter
-                    }
-                    else if (singleCharTokens.ContainsKey(c))
-                    {
-                        tokens.Add(new Token(singleCharTokens[c], c.ToString(), string.Empty, line));
+                        tokens.Add(new Token(multiCharTokens[$"{c}{buffer[i + 1]}"], $"{c}{buffer[i + 1]}", null, line, column));
+                        column += 2;
+                        i += 2;
+                        continue;
                     }
                     else
                     {
-                        throw new LexerException($"Token no reconocido: {c}");
+                        TokenType type = GetSingleCharTokenType(c);
+                        tokens.Add(new Token(type, c.ToString(), null, line, column));
                     }
+                    column++;
                     i++;
                     break;
 
                 case State.Number:
-                    if (char.IsDigit(c))
+                    if (char.IsDigit(c) || c == '.' || c == 'x' || c == 'b')
                     {
                         currentToken.Append(c);
+                        i++;
+                        column++;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line));
+                        string number = currentToken.ToString();
+                        TokenType numberType = DetermineNumberType(number);
+                        tokens.Add(new Token(numberType, number, ParseNumber(number, numberType), line, column - number.Length));
                         currentToken.Clear();
                         state = State.Start;
-                        continue; // Reprocesar el carácter actual
                     }
-                    i++;
                     break;
 
                 case State.Identifier:
-                    if (char.IsLetterOrDigit(c))
+                    if (char.IsLetterOrDigit(c) || c == '_')
                     {
                         currentToken.Append(c);
+                        i++;
+                        column++;
                     }
                     else
                     {
-                        string id = currentToken.ToString();
-                        tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id, string.Empty, line));
+                        string identifier = currentToken.ToString();
+                        if (keywords.TryGetValue(identifier, out TokenType keywordType))
+                        {
+                            tokens.Add(new Token(keywordType, identifier, null, line, column - identifier.Length));
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.ID, identifier, null, line, column - identifier.Length));
+                        }
                         currentToken.Clear();
                         state = State.Start;
-                        continue; // Reprocesar el carácter actual
                     }
-                    i++;
                     break;
 
                 case State.String:
-                    if (c != '"')
+                    if (c == '"' && buffer[i - 1] != '\\')
                     {
                         currentToken.Append(c);
+                        tokens.Add(new Token(TokenType.STRING, currentToken.ToString(), currentToken.ToString().Substring(1, currentToken.Length - 2), line, column - currentToken.Length));
+                        currentToken.Clear();
+                        state = State.Start;
+                        i++;
+                        column++;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.STRING, currentToken.ToString(), currentToken.ToString(), line));
-                        currentToken.Clear();
-                        state = State.Start;
+                        currentToken.Append(c);
+                        i++;
+                        column++;
                     }
-                    i++;
                     break;
 
                 case State.Character:
-                    if (c != '\'')
+                    if (c == '\'' && buffer[i - 1] != '\\')
                     {
                         currentToken.Append(c);
+                        tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString(), currentToken.ToString()[1], line, column - currentToken.Length));
+                        currentToken.Clear();
+                        state = State.Start;
+                        i++;
+                        column++;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString(), currentToken.ToString(), line));
-                        currentToken.Clear();
-                        state = State.Start;
+                        currentToken.Append(c);
+                        i++;
+                        column++;
                     }
-                    i++;
                     break;
 
                 case State.Comment:
@@ -175,71 +222,113 @@ public static class Lexer
                     {
                         state = State.Start;
                         line++;
+                        column = 1;
                     }
                     i++;
-                    break;
-
-                case State.Done:
                     break;
             }
         }
 
         if (currentToken.Length > 0)
         {
-            switch (state)
-            {
-                case State.Number:
-                    tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line));
-                    break;
-                case State.Identifier:
-                    string id = currentToken.ToString();
-                    tokens.Add(new Token(keywords.ContainsKey(id) ? keywords[id] : TokenType.ID, id, string.Empty, line));
-                    break;
-                case State.String:
-                    throw new LexerException("Cadena sin cerrar");
-                case State.Character:
-                    throw new LexerException("Carácter sin cerrar");
-            }
+            throw new LexerException($"Unexpected end of input: {currentToken}");
         }
 
-        tokens.Add(new Token(TokenType.EOF, "", string.Empty, line));
-        foreach (var token in tokens)
-        {
-            Console.WriteLine(token);
-        }
-
+        tokens.Add(new Token(TokenType.EOF, "", null, line, column));
         return tokens;
     }
 
-    private static string Preprocess(string texto)
+    private static TokenType GetSingleCharTokenType(char c)
+    {
+        switch (c)
+        {
+            case '+': return TokenType.PLUS;
+            case '-': return TokenType.MINUS;
+            case '*': return TokenType.TIMES;
+            case '/': return TokenType.DIVIDE;
+            case '%': return TokenType.MODULO;
+            case '=': return TokenType.ASSIGN;
+            case '<': return TokenType.LESS_THAN;
+            case '>': return TokenType.GREATER_THAN;
+            case '!': return TokenType.NOT;
+            case '&': return TokenType.BIT_AND;
+            case '|': return TokenType.BIT_OR;
+            case '^': return TokenType.BIT_XOR;
+            case '~': return TokenType.BIT_NOT;
+            case '.': return TokenType.DOT;
+            case ',': return TokenType.COMMA;
+            case ';': return TokenType.SEMICOLON;
+            case ':': return TokenType.COLON;
+            case '(': return TokenType.LPAREN;
+            case ')': return TokenType.RPAREN;
+            case '{': return TokenType.LBRACE;
+            case '}': return TokenType.RBRACE;
+            case '[': return TokenType.LBRACKET;
+            case ']': return TokenType.RBRACKET;
+            case '?': return TokenType.QUESTION;
+            case '#': return TokenType.HASH;
+            case '$': return TokenType.DOLLAR;
+            case '\\': return TokenType.BACKSLASH;
+            case '`': return TokenType.BACKTICK;
+            default: throw new LexerException($"Unexpected character: {c}");
+        }
+    }
+
+    private static TokenType DetermineNumberType(string number)
+    {
+        if (number.Contains("."))
+            return TokenType.FLOAT;
+        if (number.StartsWith("0x") || number.StartsWith("0X"))
+            return TokenType.HEX_NUMBER;
+        if (number.StartsWith("0b") || number.StartsWith("0B"))
+            return TokenType.BIN_NUMBER;
+        return TokenType.NUMBER;
+    }
+
+    private static object ParseNumber(string number, TokenType type)
+    {
+        switch (type)
+        {
+            case TokenType.FLOAT:
+                return double.Parse(number);
+            case TokenType.HEX_NUMBER:
+                return Convert.ToInt32(number.Substring(2), 16);
+            case TokenType.BIN_NUMBER:
+                return Convert.ToInt32(number.Substring(2), 2);
+            case TokenType.NUMBER:
+                return int.Parse(number);
+            default:
+                throw new LexerException($"Invalid number type: {type}");
+        }
+    }
+
+    private static string Preprocess(string text)
     {
         StringBuilder result = new StringBuilder();
+        bool inMultiLineComment = false;
         int i = 0;
 
-        while (i < texto.Length)
+        while (i < text.Length)
         {
-            char c = texto[i];
-
-            if (c == '/' && i + 1 < texto.Length && texto[i + 1] == '/')
+            if (!inMultiLineComment && text[i] == '/' && i + 1 < text.Length && text[i + 1] == '*')
             {
-                while (i < texto.Length && texto[i] != '\n')
-                {
-                    i++;
-                }
+                inMultiLineComment = true;
+                i += 2;
             }
-            else if (c == '/' && i + 1 < texto.Length && texto[i + 1] == '*')
+            else if (inMultiLineComment && text[i] == '*' && i + 1 < text.Length && text[i + 1] == '/')
             {
-                while (i < texto.Length && !(texto[i] == '*' && texto[i + 1] == '/'))
-                {
-                    i++;
-                }
-                i += 2; // Saltar el cierre del comentario
+                inMultiLineComment = false;
+                i += 2;
+            }
+            else if (!inMultiLineComment)
+            {
+                result.Append(text[i]);
+                i++;
             }
             else
             {
-                result.Append(c);
+                i++;
             }
-            i++;
         }
 
         return result.ToString();

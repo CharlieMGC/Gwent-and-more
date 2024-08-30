@@ -203,6 +203,11 @@ public static class Lexer
         }
 
         tokens.Add(new Token(TokenType.EOF, "", string.Empty, line));
+        foreach (var token in tokens)
+        {
+            Console.WriteLine(token);
+        }
+
         return tokens;
     }
 

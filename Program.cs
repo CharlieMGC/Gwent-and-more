@@ -1,184 +1,85 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 class Program
 {
     static void Main()
     {
-        string rutaArchivo = @"D:\Compilador desde 0\newtest.txt";
-        string texto;
+        string carpetaRuta = @"D:\Compilador desde 0\Pruebas";
+        
+        string[] archivos = Directory.GetFiles(carpetaRuta, "*.txt");
 
-        try
+        if (archivos.Length == 0)
         {
-            texto = File.ReadAllText(rutaArchivo);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al leer el archivo: {ex.Message}");
+            Console.WriteLine("No se encontraron archivos de prueba en la carpeta especificada.");
             return;
         }
 
-        var tokens = Lexer.Tokenize(texto);
+        foreach (var archivo in archivos)
+        {
+            Console.WriteLine($"Procesando archivo: {Path.GetFileName(archivo)}");
 
+            string texto;
+            try
+            {
+                texto = File.ReadAllText(archivo);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al leer el archivo {archivo}: {ex.Message}");
+                continue;
+            }
+
+            // Tokenización
+            List<Token> tokens;
+            try
+            {
+                tokens = Lexer.Tokenize(texto);
+                ImprimirTokens(tokens);
+            }
+            catch (LexerException ex)
+            {
+                Console.WriteLine($"Error durante la tokenización: {ex.Message}");
+                continue;
+            }
+
+            // Parsing
+            var parser = new Parser(tokens);
+            List<ASTNode> ast;
+            try
+            {
+                ast = parser.Parse().Where(node => node != null).ToList();
+            }
+            catch (ParserException ex)
+            {
+                Console.WriteLine($"Error al parsear: {ex.Message}");
+                continue;
+            }
+
+            // Imprimir el AST utilizando ASTPrinter
+            Console.WriteLine("\nAST:");
+            var printer = new ASTPrinter();
+            foreach (var node in ast)
+            {
+                string result = node.Accept(printer);
+                Console.WriteLine(result);
+                Console.WriteLine(); // Línea en blanco para separar nodos
+            }
+
+            Console.WriteLine($"Archivo {Path.GetFileName(archivo)} procesado exitosamente.\n");
+        }
+
+        Console.WriteLine("Todos los archivos han sido procesados.");
+    }
+
+    static void ImprimirTokens(List<Token> tokens)
+    {
         Console.WriteLine("Tokens:");
         foreach (var token in tokens)
         {
             Console.WriteLine(token);
-        }
-
-        // Crear el parser con los tokens generados
-        Parser parser = new Parser(tokens);
-        List<ASTNode> ast;
-
-        try
-        {
-            ast = parser.Parse().Where(node => node != null).Cast<ASTNode>().ToList();
-        }
-        catch (ParserException ex)
-        {
-            Console.WriteLine($"Error al parsear: {ex.Message}");
-            return;
-        }
-        Console.WriteLine("AST:");
-        foreach (var node in ast)
-        {
-            PrintAST(node, 0);
-        }
-    }
-
-
-    static void PrintAST(ASTNode? node, int indent)
-    {
-        if (node == null) return;
-
-        string indentString = new string(' ', indent);
-        Console.WriteLine(indentString + node.GetType().Name);
-
-        switch (node)
-        {
-            case BinaryExpression binary:
-                PrintAST(binary.Left, indent + 2);
-                Console.WriteLine(indentString + "  " + binary.Operator.Type);
-                PrintAST(binary.Right, indent + 2);
-                break;
-            case LiteralExpression literal:
-                Console.WriteLine(indentString + "  " + literal.Value);
-                break;
-            case VariableExpression variable:
-                Console.WriteLine(indentString + "  " + variable.Name.Lexeme);
-                break;
-            case GroupingExpression grouping:
-                PrintAST(grouping.Expression, indent + 2);
-                break;
-            case UnaryExpression unary:
-                Console.WriteLine(indentString + "  " + unary.Operator.Type);
-                PrintAST(unary.Right, indent + 2);
-                break;
-            case VariableDeclaration variableDeclaration:
-                Console.WriteLine(indentString + "  Type: " + variableDeclaration.Type.Lexeme);
-                Console.WriteLine(indentString + "  Name: " + variableDeclaration.Name.Lexeme);
-                if (variableDeclaration.Initializer != null)
-                {
-                    Console.WriteLine(indentString + "  Initializer:");
-                    PrintAST(variableDeclaration.Initializer, indent + 2);
-                }
-                break;
-            case FunctionDeclaration functionDeclaration:
-                Console.WriteLine(indentString + "  Function: " + functionDeclaration.Name.Lexeme);
-                Console.WriteLine(indentString + "  Parameters:");
-                foreach (var param in functionDeclaration.Parameters)
-                {
-                    PrintAST(param, indent + 2);
-                }
-                Console.WriteLine(indentString + "  Body:");
-                PrintAST(functionDeclaration.Body, indent + 2);
-                break;
-            case ExpressionStatement expressionStatement:
-                PrintAST(expressionStatement.Expression, indent + 2);
-                break;
-            case IfStatement ifStatement:
-                Console.WriteLine(indentString + "  Condition:");
-                PrintAST(ifStatement.Condition, indent + 2);
-                Console.WriteLine(indentString + "  Then:");
-                PrintAST(ifStatement.ThenBranch, indent + 2);
-                if (ifStatement.ElseBranch != null)
-                {
-                    Console.WriteLine(indentString + "  Else:");
-                    PrintAST(ifStatement.ElseBranch, indent + 2);
-                }
-                break;
-            case WhileStatement whileStatement:
-                Console.WriteLine(indentString + "  Condition:");
-                PrintAST(whileStatement.Condition, indent + 2);
-                Console.WriteLine(indentString + "  Body:");
-                PrintAST(whileStatement.Body, indent + 2);
-                break;
-            case ForStatement forStatement:
-                Console.WriteLine(indentString + "  Initializer:");
-                PrintAST(forStatement.Initializer, indent + 2);
-                Console.WriteLine(indentString + "  Condition:");
-                PrintAST(forStatement.Condition, indent + 2);
-                Console.WriteLine(indentString + "  Increment:");
-                PrintAST(forStatement.Increment, indent + 2);
-                Console.WriteLine(indentString + "  Body:");
-                PrintAST(forStatement.Body, indent + 2);
-                break;
-            case BlockStatement blockStatement:
-                Console.WriteLine(indentString + "  Block:");
-                foreach (var stmt in blockStatement.Statements)
-                {
-                    PrintAST(stmt, indent + 2);
-                }
-                break;
-            case ReturnStatement returnStatement:
-                Console.WriteLine(indentString + "  Return:");
-                PrintAST(returnStatement.Value, indent + 2);
-                break;
-            case ArrayDeclaration arrayDeclaration:
-                Console.WriteLine(indentString + "  Array Type: " + arrayDeclaration.Type.Lexeme);
-                Console.WriteLine(indentString + "  Array Name: " + arrayDeclaration.Name.Lexeme);
-                Console.WriteLine(indentString + "  Size:");
-                PrintAST(arrayDeclaration.Size, indent + 2);
-                if (arrayDeclaration.Initializer != null)
-                {
-                    Console.WriteLine(indentString + "  Initializer:");
-                    foreach (var element in arrayDeclaration.Initializer)
-                    {
-                        PrintAST(element, indent + 2);
-                    }
-                }
-                break;
-            case ArrayAccess arrayAccess:
-                Console.WriteLine(indentString + "  Array:");
-                PrintAST(arrayAccess.Array, indent + 2);
-                Console.WriteLine(indentString + "  Index:");
-                PrintAST(arrayAccess.Index, indent + 2);
-                break;
-            case ArrayAssignmentExpression arrayAssignment:
-                Console.WriteLine(indentString + "  Array:");
-                PrintAST(arrayAssignment.Array, indent + 2);
-                Console.WriteLine(indentString + "  Index:");
-                PrintAST(arrayAssignment.Index, indent + 2);
-                Console.WriteLine(indentString + "  Value:");
-                PrintAST(arrayAssignment.Value, indent + 2);
-                break;
-            case TernaryExpression ternary:
-                Console.WriteLine(indentString + "  Condition:");
-                PrintAST(ternary.Condition, indent + 2);
-                Console.WriteLine(indentString + "  True Expression:");
-                PrintAST(ternary.TrueExpr, indent + 2);
-                Console.WriteLine(indentString + "  False Expression:");
-                PrintAST(ternary.FalseExpr, indent + 2);
-                break;
-            case LogicalExpression logical:
-                PrintAST(logical.Left, indent + 2);
-                Console.WriteLine(indentString + "  " + logical.Operator.Type);
-                PrintAST(logical.Right, indent + 2);
-                break;
-            default:
-                Console.WriteLine(indentString + "  Nodo no reconocido");
-                break;
         }
     }
 }

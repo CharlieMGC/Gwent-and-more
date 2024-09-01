@@ -59,18 +59,22 @@ public class Parser
     {
         Token type = Previous();
         Token name = Consume(TokenType.ID, "Expect variable name.");
+        Console.WriteLine($"Parsing VariableDeclaration: Type = {type.Lexeme}, Name = {name.Lexeme}");
 
         ASTNode? initializer = null;
         if (Match(TokenType.ASSIGN))
         {
+            Console.WriteLine("Parsing VariableDeclaration: Found assignment operator.");
             initializer = Expression();
         }
         else if (Match(TokenType.LBRACKET))
         {
+            Console.WriteLine("Parsing VariableDeclaration: Found array declaration.");
             ASTNode size = Expression();
             Consume(TokenType.RBRACKET, "Expect ']' after array size.");
             if (Match(TokenType.ASSIGN))
             {
+                Console.WriteLine("Parsing VariableDeclaration: Found array initializer.");
                 List<ASTNode> elements = new List<ASTNode>();
                 if (Match(TokenType.LBRACE))
                 {
@@ -92,6 +96,7 @@ public class Parser
         }
 
         Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        Console.WriteLine($"Completed VariableDeclaration for {name.Lexeme}");
         return new VariableDeclaration(type, name, initializer ?? new LiteralExpression(null));
     }
 
@@ -134,17 +139,22 @@ public class Parser
 
     private ASTNode IfStatement()
     {
+        Console.WriteLine("Parsing IfStatement");
         Consume(TokenType.LPAREN, "Expect '(' after 'if'.");
         ASTNode condition = Expression();
+        Console.WriteLine("IfStatement: Parsed condition");
         Consume(TokenType.RPAREN, "Expect ')' after if condition.");
 
+
         ASTNode thenBranch = Statement();
+        Console.WriteLine("IfStatement: Parsed then branch");
         ASTNode? elseBranch = null;
         if (Match(TokenType.ELSE))
         {
+            Console.WriteLine("IfStatement: Found else branch");
             elseBranch = Statement();
         }
-
+        Console.WriteLine("Completed IfStatement");
         return new IfStatement(condition, thenBranch, elseBranch ?? new BlockStatement(new List<ASTNode>()));
     }
 
@@ -223,13 +233,13 @@ public class Parser
         {
             value = Expression();
         }
-
         Consume(TokenType.SEMICOLON, "Expect ';' after return value.");
         return new ReturnStatement(keyword, value);
     }
 
     private ASTNode Block()
     {
+        Console.WriteLine("Parsing BlockStatement");
         List<ASTNode> statements = new List<ASTNode>();
 
         while (!Check(TokenType.RBRACE) && !IsAtEnd())
@@ -238,10 +248,12 @@ public class Parser
             if (declaration != null)
             {
                 statements.Add(declaration);
+                Console.WriteLine("BlockStatement: Added declaration");
             }
         }
 
         Consume(TokenType.RBRACE, "Expect '}' after block.");
+        Console.WriteLine("Completed BlockStatement");
         return new BlockStatement(statements);
     }
 
@@ -260,19 +272,23 @@ public class Parser
     private ASTNode Assignment()
     {
         ASTNode expr = LogicalOr();
+        Console.WriteLine("Assignment: Parsed left-hand expression");
 
         if (Match(TokenType.ASSIGN))
         {
             Token equals = Previous();
             ASTNode value = Expression();
+            Console.WriteLine("Assignment: Found assignment operator and right-hand expression");
 
             if (expr is VariableExpression ve)
             {
                 Token name = ve.Name;
+                Console.WriteLine($"Assignment: Variable {name.Lexeme}");
                 return new AssignmentExpression(name, value);
             }
             else if (expr is ArrayAccess aa)
             {
+                Console.WriteLine("Assignment: Array access assignment");
                 return new ArrayAssignmentExpression(aa.Array, aa.Index, value);
             }
 

@@ -22,6 +22,21 @@ public interface IVisitor<T>
     T VisitForStatement(ForStatement stmt);
     T VisitBlockStatement(BlockStatement stmt);
     T VisitReturnStatement(ReturnStatement stmt);
+    T VisitArrayDeclaration(ArrayDeclaration stmt);
+    T VisitArrayAccess(ArrayAccess expr);
+    T VisitArrayAssignmentExpression(ArrayAssignmentExpression expr);
+    T VisitStructDeclaration(StructDeclaration stmt);
+    T VisitEnumDeclaration(EnumDeclaration stmt);
+    T VisitTernaryExpression(TernaryExpression expr);
+    T VisitLambdaExpression(LambdaExpression expr);
+    T VisitImportStatement(ImportStatement stmt);
+    T VisitTryCatchStatement(TryCatchStatement stmt);
+    T VisitThrowStatement(ThrowStatement stmt);
+    T VisitLogicalExpression(LogicalExpression expr);
+    T VisitSwitchStatement(SwitchStatement stmt);
+    T VisitCaseStatement(CaseStatement stmt);
+    T VisitBreakStatement(BreakStatement stmt);
+    T VisitContinueStatement(ContinueStatement stmt);
 }
 
 public class BinaryExpression : ASTNode
@@ -138,6 +153,24 @@ public class CallExpression : ASTNode
     public override T Accept<T>(IVisitor<T> visitor)
     {
         return visitor.VisitCallExpression(this);
+    }
+}
+public class LogicalExpression : ASTNode
+{
+    public ASTNode Left { get; }
+    public Token Operator { get; }
+    public ASTNode Right { get; }
+
+    public LogicalExpression(ASTNode left, Token op, ASTNode right)
+    {
+        Left = left;
+        Operator = op;
+        Right = right;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitLogicalExpression(this);
     }
 }
 
@@ -280,5 +313,233 @@ public class ReturnStatement : ASTNode
     public override T Accept<T>(IVisitor<T> visitor)
     {
         return visitor.VisitReturnStatement(this);
+    }
+}
+public class SwitchStatement : ASTNode
+{
+    public ASTNode Expression { get; }
+    public List<CaseStatement> Cases { get; }
+    public BlockStatement DefaultCase { get; }
+
+    public SwitchStatement(ASTNode expression, List<CaseStatement> cases, BlockStatement defaultCase)
+    {
+        Expression = expression;
+        Cases = cases;
+        DefaultCase = defaultCase;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitSwitchStatement(this);
+    }
+}
+
+public class CaseStatement : ASTNode
+{
+    public ASTNode Value { get; }
+    public BlockStatement Body { get; }
+
+    public CaseStatement(ASTNode value, BlockStatement body)
+    {
+        Value = value;
+        Body = body;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitCaseStatement(this);
+    }
+}
+
+public class BreakStatement : ASTNode
+{
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitBreakStatement(this);
+    }
+}
+
+public class ContinueStatement : ASTNode
+{
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitContinueStatement(this);
+    }
+}
+public class ArrayDeclaration : ASTNode
+{
+    public Token Type { get; }
+    public Token Name { get; }
+    public ASTNode Size { get; }
+    public List<ASTNode> Initializer { get; }
+
+    public ArrayDeclaration(Token type, Token name, ASTNode size, List<ASTNode> initializer)
+    {
+        Type = type;
+        Name = name;
+        Size = size;
+        Initializer = initializer;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitArrayDeclaration(this);
+    }
+}
+
+public class ArrayAccess : ASTNode
+{
+    public ASTNode Array { get; }
+    public ASTNode Index { get; }
+
+    public ArrayAccess(ASTNode array, ASTNode index)
+    {
+        Array = array;
+        Index = index;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitArrayAccess(this);
+    }
+}
+
+public class ArrayAssignmentExpression : ASTNode
+{
+    public ASTNode Array { get; }
+    public ASTNode Index { get; }
+    public ASTNode Value { get; }
+
+    public ArrayAssignmentExpression(ASTNode array, ASTNode index, ASTNode value)
+    {
+        Array = array;
+        Index = index;
+        Value = value;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitArrayAssignmentExpression(this);
+    }
+}
+
+public class StructDeclaration : ASTNode
+{
+    public Token Name { get; }
+    public List<VariableDeclaration> Fields { get; }
+
+    public StructDeclaration(Token name, List<VariableDeclaration> fields)
+    {
+        Name = name;
+        Fields = fields;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitStructDeclaration(this);
+    }
+}
+
+public class EnumDeclaration : ASTNode
+{
+    public Token Name { get; }
+    public List<Token> Values { get; }
+
+    public EnumDeclaration(Token name, List<Token> values)
+    {
+        Name = name;
+        Values = values;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitEnumDeclaration(this);
+    }
+}
+
+public class TernaryExpression : ASTNode
+{
+    public ASTNode Condition { get; }
+    public ASTNode TrueExpr { get; }
+    public ASTNode FalseExpr { get; }
+
+    public TernaryExpression(ASTNode condition, ASTNode trueExpr, ASTNode falseExpr)
+    {
+        Condition = condition;
+        TrueExpr = trueExpr;
+        FalseExpr = falseExpr;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitTernaryExpression(this);
+    }
+}
+
+public class LambdaExpression : ASTNode
+{
+    public List<VariableDeclaration> Parameters { get; }
+    public ASTNode Body { get; }
+
+    public LambdaExpression(List<VariableDeclaration> parameters, ASTNode body)
+    {
+        Parameters = parameters;
+        Body = body;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitLambdaExpression(this);
+    }
+}
+
+public class ImportStatement : ASTNode
+{
+    public Token Module { get; }
+
+    public ImportStatement(Token module)
+    {
+        Module = module;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitImportStatement(this);
+    }
+}
+
+public class TryCatchStatement : ASTNode
+{
+    public BlockStatement TryBlock { get; }
+    public VariableDeclaration CatchParameter { get; }
+    public BlockStatement CatchBlock { get; }
+    public BlockStatement FinallyBlock { get; }
+
+    public TryCatchStatement(BlockStatement tryBlock, VariableDeclaration catchParameter, BlockStatement catchBlock, BlockStatement finallyBlock)
+    {
+        TryBlock = tryBlock;
+        CatchParameter = catchParameter;
+        CatchBlock = catchBlock;
+        FinallyBlock = finallyBlock;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitTryCatchStatement(this);
+    }
+}
+
+public class ThrowStatement : ASTNode
+{
+    public ASTNode Expression { get; }
+
+    public ThrowStatement(ASTNode expression)
+    {
+        Expression = expression;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitThrowStatement(this);
     }
 }

@@ -29,7 +29,7 @@ class Program
 
         // Crear el parser con los tokens generados
         Parser parser = new Parser(tokens);
-        List<ASTNode> ast;
+        List<ASTNode?> ast;
 
         try
         {
@@ -49,7 +49,7 @@ class Program
         }
     }
 
-    static void PrintAST(ASTNode node, int indent)
+    static void PrintAST(ASTNode? node, int indent)
     {
         if (node == null) return;
 
@@ -61,7 +61,7 @@ class Program
             case BinaryExpression binary:
                 PrintAST(binary.Left, indent + 2);
                 Console.WriteLine(indentString + "  " + binary.Operator.Type);
-                                PrintAST(binary.Right, indent + 2);
+                PrintAST(binary.Right, indent + 2);
                 break;
             case LiteralExpression literal:
                 Console.WriteLine(indentString + "  " + literal.Value);
@@ -79,8 +79,11 @@ class Program
             case VariableDeclaration variableDeclaration:
                 Console.WriteLine(indentString + "  Type: " + variableDeclaration.Type.Lexeme);
                 Console.WriteLine(indentString + "  Name: " + variableDeclaration.Name.Lexeme);
-                Console.WriteLine(indentString + "  Initializer:");
-                PrintAST(variableDeclaration.Initializer, indent + 2);
+                if (variableDeclaration.Initializer != null)
+                {
+                    Console.WriteLine(indentString + "  Initializer:");
+                    PrintAST(variableDeclaration.Initializer, indent + 2);
+                }
                 break;
             case FunctionDeclaration functionDeclaration:
                 Console.WriteLine(indentString + "  Function: " + functionDeclaration.Name.Lexeme);
@@ -132,6 +135,47 @@ class Program
             case ReturnStatement returnStatement:
                 Console.WriteLine(indentString + "  Return:");
                 PrintAST(returnStatement.Value, indent + 2);
+                break;
+            case ArrayDeclaration arrayDeclaration:
+                Console.WriteLine(indentString + "  Array Type: " + arrayDeclaration.Type.Lexeme);
+                Console.WriteLine(indentString + "  Array Name: " + arrayDeclaration.Name.Lexeme);
+                Console.WriteLine(indentString + "  Size:");
+                PrintAST(arrayDeclaration.Size, indent + 2);
+                if (arrayDeclaration.Initializer != null)
+                {
+                    Console.WriteLine(indentString + "  Initializer:");
+                    foreach (var element in arrayDeclaration.Initializer)
+                    {
+                        PrintAST(element, indent + 2);
+                    }
+                }
+                break;
+            case ArrayAccess arrayAccess:
+                Console.WriteLine(indentString + "  Array:");
+                PrintAST(arrayAccess.Array, indent + 2);
+                Console.WriteLine(indentString + "  Index:");
+                PrintAST(arrayAccess.Index, indent + 2);
+                break;
+            case ArrayAssignmentExpression arrayAssignment:
+                Console.WriteLine(indentString + "  Array:");
+                PrintAST(arrayAssignment.Array, indent + 2);
+                Console.WriteLine(indentString + "  Index:");
+                PrintAST(arrayAssignment.Index, indent + 2);
+                Console.WriteLine(indentString + "  Value:");
+                PrintAST(arrayAssignment.Value, indent + 2);
+                break;
+            case TernaryExpression ternary:
+                Console.WriteLine(indentString + "  Condition:");
+                PrintAST(ternary.Condition, indent + 2);
+                Console.WriteLine(indentString + "  True Expression:");
+                PrintAST(ternary.TrueExpr, indent + 2);
+                Console.WriteLine(indentString + "  False Expression:");
+                PrintAST(ternary.FalseExpr, indent + 2);
+                break;
+            case LogicalExpression logical:
+                PrintAST(logical.Left, indent + 2);
+                Console.WriteLine(indentString + "  " + logical.Operator.Type);
+                PrintAST(logical.Right, indent + 2);
                 break;
             default:
                 Console.WriteLine(indentString + "  Nodo no reconocido");

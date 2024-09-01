@@ -60,6 +60,7 @@ public enum TokenType
     BIT_NOT,    // ~
     SHIFT_LEFT, // <<
     SHIFT_RIGHT, // >>
+    ARROW,      // ->
 
     // Separadores
     COMMA,      // ,
@@ -88,7 +89,13 @@ public enum TokenType
     RETURN,
     FUN,        // Function declaration
     TYPE,       // int, float, char, bool, void, string
-
+    STRUCT,
+    ENUM,
+    IMPORT,
+    TRY,
+    CATCH,
+    FINALLY,
+    THROW,
     // Control de flujo
     BREAK,
     CONTINUE,
@@ -97,8 +104,9 @@ public enum TokenType
     DEFAULT,
 
     // Otros
-    NEWLINE,
     EOF,
+    
+
 }
 
 public class Token
@@ -118,8 +126,17 @@ public class Token
         Column = column;
     }
 
-    public override string ToString()
-    {
-        return $"{Type} {Lexeme} {Literal} (Line: {Line}, Column: {Column})";
-    }
+    public override string ToString() => $"{Type} {Lexeme} {Literal} (Line: {Line}, Column: {Column})";
+
+    public bool Equals(Token? other) =>
+        other != null &&
+        Type == other.Type &&
+        Lexeme == other.Lexeme &&
+        Equals(Literal, other.Literal) &&
+        Line == other.Line &&
+        Column == other.Column;
+
+    public override bool Equals(object? obj) => Equals(obj as Token);
+
+    public override int GetHashCode() => HashCode.Combine(Type, Lexeme, Literal, Line, Column);
 }

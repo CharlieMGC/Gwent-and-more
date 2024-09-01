@@ -3,7 +3,11 @@ using System.Collections.Generic;
 
 public class ParserException : Exception
 {
-    public ParserException(string message) : base(message) { }
+    public Token Token { get; }
+    public ParserException(string message, Token token) : base(message)
+    {
+        Token = token;
+    }
 }
 
 public class Parser
@@ -21,20 +25,16 @@ public class Parser
         List<ASTNode> statements = new List<ASTNode>();
         while (!IsAtEnd())
         {
-            try
+            ASTNode? declaration = Declaration();
+            if (declaration != null)
             {
-                statements.Add(Declaration());
-            }
-            catch (ParserException e)
-            {
-                Console.WriteLine(e.Message);
-                Synchronize();
+                statements.Add(declaration);
             }
         }
         return statements;
     }
 
-    private ASTNode Declaration()
+    private ASTNode? Declaration()
     {
         try
         {
@@ -48,7 +48,7 @@ public class Parser
             }
             return Statement();
         }
-        catch (ParserException error)
+        catch (ParserException)
         {
             Synchronize();
             return null;
@@ -60,14 +60,39 @@ public class Parser
         Token type = Previous();
         Token name = Consume(TokenType.ID, "Expect variable name.");
 
-        ASTNode initializer = null;
+        ASTNode? initializer = null;
         if (Match(TokenType.ASSIGN))
         {
             initializer = Expression();
         }
+        else if (Match(TokenType.LBRACKET))
+        {
+            ASTNode size = Expression();
+            Consume(TokenType.RBRACKET, "Expect ']' after array size.");
+            if (Match(TokenType.ASSIGN))
+            {
+                List<ASTNode> elements = new List<ASTNode>();
+                if (Match(TokenType.LBRACE))
+                {
+                    if (!Check(TokenType.RBRACE))
+                    {
+                        do
+                        {
+                            elements.Add(Expression());
+                        } while (Match(TokenType.COMMA));
+                    }
+                    Consume(TokenType.RBRACE, "Expect '}' after array initializer.");
+                }
+                initializer = new ArrayDeclaration(type, name, size, elements);
+            }
+            else
+            {
+                initializer = new ArrayDeclaration(type, name, size, new List<ASTNode>());
+            }
+        }
 
         Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return new VariableDeclaration(type, name, initializer);
+        return new VariableDeclaration(type, name, initializer ?? new LiteralExpression(null));
     }
 
     private ASTNode FunctionDeclaration()
@@ -86,7 +111,7 @@ public class Parser
 
                 Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
                 Token paramName = Consume(TokenType.ID, "Expect parameter name.");
-                parameters.Add(new VariableDeclaration(paramType, paramName, null));
+                parameters.Add(new VariableDeclaration(paramType, paramName, new LiteralExpression(null)));
             } while (Match(TokenType.COMMA));
         }
         Consume(TokenType.RPAREN, "Expect ')' after parameters.");
@@ -114,13 +139,13 @@ public class Parser
         Consume(TokenType.RPAREN, "Expect ')' after if condition.");
 
         ASTNode thenBranch = Statement();
-        ASTNode elseBranch = null;
+        ASTNode? elseBranch = null;
         if (Match(TokenType.ELSE))
         {
             elseBranch = Statement();
         }
 
-        return new IfStatement(condition, thenBranch, elseBranch);
+        return new IfStatement(condition, thenBranch, elseBranch ?? new BlockStatement(new List<ASTNode>()));
     }
 
     private ASTNode WhileStatement()
@@ -137,7 +162,7 @@ public class Parser
     {
         Consume(TokenType.LPAREN, "Expect '(' after 'for'.");
 
-        ASTNode initializer;
+        ASTNode? initializer;
         if (Match(TokenType.SEMICOLON))
         {
             initializer = null;
@@ -151,14 +176,14 @@ public class Parser
             initializer = ExpressionStatement();
         }
 
-        ASTNode condition = null;
+        ASTNode condition = new LiteralExpression(true);
         if (!Check(TokenType.SEMICOLON))
         {
             condition = Expression();
         }
         Consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
 
-        ASTNode increment = null;
+        ASTNode? increment = null;
         if (!Check(TokenType.RPAREN))
         {
             increment = Expression();
@@ -167,7 +192,6 @@ public class Parser
 
         ASTNode body = Statement();
 
-        // Desugar for loop into while loop
         if (increment != null)
         {
             body = new BlockStatement(new List<ASTNode>
@@ -177,10 +201,6 @@ public class Parser
             });
         }
 
-        if (condition == null)
-        {
-            condition = new LiteralExpression(true);
-        }
         body = new WhileStatement(condition, body);
 
         if (initializer != null)
@@ -198,7 +218,7 @@ public class Parser
     private ASTNode ReturnStatement()
     {
         Token keyword = Previous();
-        ASTNode value = null;
+        ASTNode value = new LiteralExpression(null);
         if (!Check(TokenType.SEMICOLON))
         {
             value = Expression();
@@ -214,7 +234,11 @@ public class Parser
 
         while (!Check(TokenType.RBRACE) && !IsAtEnd())
         {
-            statements.Add(Declaration());
+            ASTNode? declaration = Declaration();
+            if (declaration != null)
+            {
+                statements.Add(declaration);
+            }
         }
 
         Consume(TokenType.RBRACE, "Expect '}' after block.");
@@ -240,15 +264,19 @@ public class Parser
         if (Match(TokenType.ASSIGN))
         {
             Token equals = Previous();
-            ASTNode value = Assignment();
+            ASTNode value = Expression();
 
             if (expr is VariableExpression ve)
             {
                 Token name = ve.Name;
                 return new AssignmentExpression(name, value);
             }
+            else if (expr is ArrayAccess aa)
+            {
+                return new ArrayAssignmentExpression(aa.Array, aa.Index, value);
+            }
 
-            Error(equals, "Invalid assignment target.");
+            throw Error(equals, "Invalid assignment target.");
         }
 
         return expr;
@@ -402,7 +430,14 @@ public class Parser
 
         if (Match(TokenType.ID))
         {
-            return new VariableExpression(Previous());
+            Token name = Previous();
+            if (Match(TokenType.LBRACKET))
+            {
+                ASTNode index = Expression();
+                Consume(TokenType.RBRACKET, "Expect ']' after array index.");
+                return new ArrayAccess(new VariableExpression(name), index);
+            }
+            return new VariableExpression(name);
         }
 
         if (Match(TokenType.LPAREN))
@@ -463,8 +498,7 @@ public class Parser
 
     private ParserException Error(Token token, string message)
     {
-        Console.WriteLine($"[line {token.Line}, column {token.Column}] Error at '{token.Lexeme}': {message}");
-        return new ParserException(message);
+        return new ParserException(message, token);
     }
 
     private void Synchronize()

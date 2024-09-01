@@ -16,7 +16,8 @@ public static class Lexer
         Identifier,
         String,
         Character,
-        Comment,
+        SingleLineComment,
+        MultiLineComment,
         Done
     }
 
@@ -41,7 +42,14 @@ public static class Lexer
         { "switch", TokenType.SWITCH },
         { "case", TokenType.CASE },
         { "default", TokenType.DEFAULT },
-        { "fun", TokenType.FUN }
+        { "fun", TokenType.FUN },
+        { "struct", TokenType.STRUCT },
+        { "enum", TokenType.ENUM },
+        { "import", TokenType.IMPORT },
+        { "try", TokenType.TRY },
+        { "catch", TokenType.CATCH },
+        { "finally", TokenType.FINALLY },
+        { "throw", TokenType.THROW }
     };
 
     private static readonly Dictionary<string, TokenType> multiCharTokens = new Dictionary<string, TokenType>
@@ -65,7 +73,8 @@ public static class Lexer
         { "++", TokenType.INCREMENT },
         { "--", TokenType.DECREMENT },
         { "<<", TokenType.SHIFT_LEFT },
-        { ">>", TokenType.SHIFT_RIGHT }
+        { ">>", TokenType.SHIFT_RIGHT },
+        { "->", TokenType.ARROW }
     };
 
     public static List<Token> Tokenize(string text)
@@ -120,10 +129,22 @@ public static class Lexer
                         state = State.Character;
                         currentToken.Append(c);
                     }
-                    else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '/')
+                    else if (c == '/' && i + 1 < buffer.Length)
                     {
-                        state = State.Comment;
-                        i++; // Skip next '/'
+                        if (buffer[i + 1] == '/')
+                        {
+                            state = State.SingleLineComment;
+                            i++; // Skip next '/'
+                        }
+                        else if (buffer[i + 1] == '*')
+                        {
+                            state = State.MultiLineComment;
+                            i++; // Skip next '*'
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(TokenType.DIVIDE, c.ToString(), null, line, column));
+                        }
                     }
                     else if (i + 1 < buffer.Length && multiCharTokens.ContainsKey($"{c}{buffer[i + 1]}"))
                     {
@@ -217,7 +238,7 @@ public static class Lexer
                     }
                     break;
 
-                case State.Comment:
+                case State.SingleLineComment:
                     if (c == '\n')
                     {
                         state = State.Start;
@@ -225,6 +246,28 @@ public static class Lexer
                         column = 1;
                     }
                     i++;
+                    break;
+
+                case State.MultiLineComment:
+                    if (c == '*' && i + 1 < buffer.Length && buffer[i + 1] == '/')
+                    {
+                        state = State.Start;
+                        i += 2;
+                        column += 2;
+                    }
+                    else
+                    {
+                        if (c == '\n')
+                        {
+                            line++;
+                            column = 1;
+                        }
+                        else
+                        {
+                            column++;
+                        }
+                        i++;
+                    }
                     break;
             }
         }

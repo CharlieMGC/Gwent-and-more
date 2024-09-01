@@ -29,25 +29,24 @@ class Program
 
         // Crear el parser con los tokens generados
         Parser parser = new Parser(tokens);
-        List<ASTNode?> ast;
+        List<ASTNode> ast;
 
         try
         {
-            ast = parser.Parse();
+            ast = parser.Parse().Where(node => node != null).Cast<ASTNode>().ToList();
         }
         catch (ParserException ex)
         {
             Console.WriteLine($"Error al parsear: {ex.Message}");
             return;
         }
-
-        // Imprimir el AST
         Console.WriteLine("AST:");
         foreach (var node in ast)
         {
             PrintAST(node, 0);
         }
     }
+
 
     static void PrintAST(ASTNode? node, int indent)
     {

@@ -77,9 +77,9 @@ public class UnaryExpression : ASTNode
 
 public class LiteralExpression : ASTNode
 {
-    public object Value { get; }
+    public object? Value { get; }
 
-    public LiteralExpression(object value)
+    public LiteralExpression(object? value)
     {
         Value = value;
     }

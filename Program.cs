@@ -68,6 +68,23 @@ class Program
                 Console.WriteLine(); // Línea en blanco para separar nodos
             }
 
+            // Análisis Semántico
+            Console.WriteLine("Iniciando análisis semántico...");
+            var semanticAnalyzer = new SemanticAnalyzer();
+            try
+            {
+                foreach (var node in ast)
+                {
+                    node.Accept(semanticAnalyzer);
+                }
+                Console.WriteLine("Análisis semántico completado exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error durante el análisis semántico: {ex.Message}");
+                continue;
+            }
+
             Console.WriteLine($"Archivo {Path.GetFileName(archivo)} procesado exitosamente.\n");
         }
 

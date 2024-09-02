@@ -12,6 +12,7 @@ public class Scope
         this.variables = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
     }
 
+    // Define a new variable in the current scope
     public void Define(string name, object value)
     {
         if (variables.ContainsKey(name))
@@ -21,6 +22,7 @@ public class Scope
         variables[name] = value;
     }
 
+    // Get the value of a variable, searching in the current and parent scopes
     public object Get(string name)
     {
         if (variables.TryGetValue(name, out object? value))
@@ -34,26 +36,23 @@ public class Scope
         throw new KeyNotFoundException($"Variable '{name}' is not defined.");
     }
 
+    // Assign a value to a variable, searching in the current and parent scopes
     public void Assign(string name, object value)
     {
-        if (variables.ContainsKey(name))
+        if (TryAssign(name, value))
         {
-            variables[name] = value;
-            return;
-        }
-        if (parentScope != null)
-        {
-            parentScope.Assign(name, value);
             return;
         }
         throw new KeyNotFoundException($"Variable '{name}' is not defined.");
     }
 
+    // Check if a variable is defined in the current or parent scopes
     public bool IsDefined(string name)
     {
         return variables.ContainsKey(name) || (parentScope?.IsDefined(name) ?? false);
     }
 
+    // Try to get the value of a variable, returning false if not found
     public bool TryGet(string name, out object? value)
     {
         if (variables.TryGetValue(name, out value))
@@ -66,5 +65,26 @@ public class Scope
         }
         value = null;
         return false;
+    }
+
+    // Try to assign a value to a variable, returning false if the variable is not found
+    public bool TryAssign(string name, object value)
+    {
+        if (variables.ContainsKey(name))
+        {
+            variables[name] = value;
+            return true;
+        }
+        if (parentScope != null)
+        {
+            return parentScope.TryAssign(name, value);
+        }
+        return false;
+    }
+
+    // Create a new child scope
+    public Scope CreateChildScope()
+    {
+        return new Scope(this);
     }
 }

@@ -13,3 +13,17 @@ D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.pdb
 D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.genruntimeconfig.cache
 D:\Compilador desde 0\obj\Debug\net8.0\ref\Compilador desde 0.dll
 D:\Compilador desde 0\obj\Debug\net8.0\Compilador desde 0.sourcelink.json
+D:\GithubProjects\Gwent-and-more-main\bin\Debug\net8.0\Compilador desde 0.exe
+D:\GithubProjects\Gwent-and-more-main\bin\Debug\net8.0\Compilador desde 0.deps.json
+D:\GithubProjects\Gwent-and-more-main\bin\Debug\net8.0\Compilador desde 0.runtimeconfig.json
+D:\GithubProjects\Gwent-and-more-main\bin\Debug\net8.0\Compilador desde 0.dll
+D:\GithubProjects\Gwent-and-more-main\bin\Debug\net8.0\Compilador desde 0.pdb
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.GeneratedMSBuildEditorConfig.editorconfig
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.AssemblyInfoInputs.cache
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.AssemblyInfo.cs
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.csproj.CoreCompileInputs.cache
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.dll
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\refint\Compilador desde 0.dll
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.pdb
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\Compilador desde 0.genruntimeconfig.cache
+D:\GithubProjects\Gwent-and-more-main\obj\Debug\net8.0\ref\Compilador desde 0.dll

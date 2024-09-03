@@ -21,11 +21,11 @@ public class ASTPrinter : IVisitor<string>
     {
         return expr.Value?.ToString() ?? "null";
     }
+
     public string VisitGroupingExpression(GroupingExpression expr)
     {
-        string expression = expr.Expression.Accept(this);
-        Console.WriteLine($"Printing grouping expression: {expression}");
-        return $"({expression})";
+        string expression = expr.Expression.Accept(this) ?? "null";
+    return $"({expression})";
     }
 
     public string VisitVariableExpression(VariableExpression expr)
@@ -160,8 +160,8 @@ public class ASTPrinter : IVisitor<string>
         string type = stmt.Type.Lexeme;
         string name = stmt.Name.Lexeme;
         string size = stmt.Size.Accept(this);
-        string initializer = stmt.Initializer.Count > 0
-            ? $" = {{ {string.Join(", ", stmt.Initializer.ConvertAll(init => init.Accept(this)))} }}"
+        string initializer = stmt.Initializer.Count > 0 
+            ? $" = {{ {string.Join(", ", stmt.Initializer.ConvertAll(init => init.Accept(this)))} }}" 
             : string.Empty;
         return $"{type} {name}[{size}]{initializer};";
     }

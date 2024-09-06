@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\GithubProjects\\Gwent-and-more-main\\Compilador desde 0.csproj",
+      "projectUniqueName": "D:\\Compilador desde 0\\Compilador desde 0.csproj",
       "projectName": "Compilador desde 0",
-      "projectPath": "D:\\GithubProjects\\Gwent-and-more-main\\Compilador desde 0.csproj",
+      "projectPath": "D:\\Compilador desde 0\\Compilador desde 0.csproj",
       "packagesPath": "C:\\Users\\Carlo\\.nuget\\packages\\",
-      "outputPath": "D:\\GithubProjects\\Gwent-and-more-main\\obj\\",
+      "outputPath": "D:\\Compilador desde 0\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Carlo\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -15,7 +15,6 @@ public enum TokenType
 
     // Identificadores
     ID,
-
     // Operadores aritméticos
     PLUS,       // +
     MINUS,      // -

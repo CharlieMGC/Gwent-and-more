@@ -3,29 +3,34 @@ using System.Collections.Generic;
 
 public class Scope
 {
-    private readonly Dictionary<string, object> variables;
+    private readonly Dictionary<string, ScopeVariable> variables;
     private readonly Scope? parentScope;
 
     public Scope(Scope? parentScope = null)
     {
         this.parentScope = parentScope;
-        this.variables = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        this.variables = new Dictionary<string, ScopeVariable>(StringComparer.OrdinalIgnoreCase);
     }
 
-    public void Define(string name, object value)
+    // Estructura para almacenar información de la variable
+    private class ScopeVariable
     {
-        if (variables.ContainsKey(name))
-        {
-            throw new InvalidOperationException($"Variable '{name}' is already defined in this scope.");
-        }
-        variables[name] = value;
+        public object? Value { get; set; }
+        public bool IsParameter { get; set; }
     }
 
-    public object Get(string name)
+    // Define una nueva variable en el ámbito actual
+    public void Define(string name, object? value, bool isParameter = false)
     {
-        if (variables.TryGetValue(name, out object? value))
+        variables[name] = new ScopeVariable { Value = value, IsParameter = isParameter };
+    }
+
+    // Obtiene el valor de una variable, buscando en los ámbitos actuales y superiores
+    public object? Get(string name)
+    {
+        if (variables.TryGetValue(name, out var variable))
         {
-            return value;
+            return variable.Value;
         }
         if (parentScope != null)
         {
@@ -34,30 +39,35 @@ public class Scope
         throw new KeyNotFoundException($"Variable '{name}' is not defined.");
     }
 
+    // Asigna un valor a una variable, buscando en los ámbitos actuales y superiores
     public void Assign(string name, object value)
     {
-        if (variables.ContainsKey(name))
+        if (variables.TryGetValue(name, out var variable))
         {
-            variables[name] = value;
-            return;
+            variable.Value = value;
         }
-        if (parentScope != null)
+        else if (parentScope != null)
         {
             parentScope.Assign(name, value);
-            return;
         }
-        throw new KeyNotFoundException($"Variable '{name}' is not defined.");
+        else
+        {
+            throw new KeyNotFoundException($"Variable '{name}' is not defined.");
+        }
     }
 
+    // Verifica si una variable está definida en los ámbitos actuales o superiores
     public bool IsDefined(string name)
     {
         return variables.ContainsKey(name) || (parentScope?.IsDefined(name) ?? false);
     }
 
+    // Intenta obtener el valor de una variable, devolviendo false si no se encuentra
     public bool TryGet(string name, out object? value)
     {
-        if (variables.TryGetValue(name, out value))
+        if (variables.TryGetValue(name, out var variable))
         {
+            value = variable.Value;
             return true;
         }
         if (parentScope != null)
@@ -66,5 +76,23 @@ public class Scope
         }
         value = null;
         return false;
+    }
+
+    // Crea un nuevo ámbito hijo
+    public Scope CreateChildScope()
+    {
+        return new Scope(this);
+    }
+
+    // Método para definir parámetros de función
+    public void DefineParameter(string name, object? value)
+    {
+        Define(name, value, true);
+    }
+
+    // Método para verificar si una variable es un parámetro
+    public bool IsParameter(string name)
+    {
+        return variables.TryGetValue(name, out var variable) && variable.IsParameter;
     }
 }

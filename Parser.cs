@@ -101,30 +101,30 @@ public class Parser
     }
 
     private ASTNode FunctionDeclaration()
+{
+    Token name = Consume(TokenType.ID, "Expect function name.");
+    Consume(TokenType.LPAREN, "Expect '(' after function name.");
+    List<VariableDeclaration> parameters = new List<VariableDeclaration>();
+    if (!Check(TokenType.RPAREN))
     {
-        Token name = Consume(TokenType.ID, "Expect function name.");
-        Consume(TokenType.LPAREN, "Expect '(' after function name.");
-        List<VariableDeclaration> parameters = new List<VariableDeclaration>();
-        if (!Check(TokenType.RPAREN))
+        do
         {
-            do
+            if (parameters.Count >= 255)
             {
-                if (parameters.Count >= 255)
-                {
-                    Error(Peek(), "Can't have more than 255 parameters.");
-                }
+                Error(Peek(), "Can't have more than 255 parameters.");
+            }
 
-                Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
-                Token paramName = Consume(TokenType.ID, "Expect parameter name.");
-                parameters.Add(new VariableDeclaration(paramType, paramName, new LiteralExpression(null)));
-            } while (Match(TokenType.COMMA));
-        }
-        Consume(TokenType.RPAREN, "Expect ')' after parameters.");
-
-        Consume(TokenType.LBRACE, "Expect '{' before function body.");
-        BlockStatement body = (BlockStatement)Block();
-        return new FunctionDeclaration(name, parameters, body);
+            Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
+            Token paramName = Consume(TokenType.ID, "Expect parameter name.");
+            parameters.Add(new VariableDeclaration(paramType, paramName, null));
+        } while (Match(TokenType.COMMA));
     }
+    Consume(TokenType.RPAREN, "Expect ')' after parameters.");
+
+    Consume(TokenType.LBRACE, "Expect '{' before function body.");
+    BlockStatement body = (BlockStatement)Block();
+    return new FunctionDeclaration(name, parameters, body);
+}
 
     private ASTNode Statement()
     {

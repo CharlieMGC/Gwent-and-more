@@ -3,14 +3,8 @@ using System.Collections.Generic;
 
 public class SemanticAnalyzer : IVisitor<object?>
 {
-    private OptimizedAST optimizedAST;
-    private Scope currentScope = new Scope();
-    public SemanticAnalyzer(OptimizedAST optimizedAST)
-    {
-        this.optimizedAST = optimizedAST;
-    }
-
-    private Type? currentReturnType = null;
+    private Scope currentScope = new Scope(); // Inicialización del scope actual
+    private Type? currentReturnType = null; // Para manejar el tipo de retorno de la función actual
 
     public object? VisitBinaryExpression(BinaryExpression expr)
     {
@@ -22,50 +16,120 @@ public class SemanticAnalyzer : IVisitor<object?>
             throw new Exception("Error: Operando en expresión binaria no puede ser nulo.");
         }
 
+        // Validación de que ambos operandos sean del mismo tipo
         if (left.GetType() != right.GetType())
         {
-            throw new Exception($"Error: Los tipos de los operandos en la expresión binaria no coinciden.");
+            throw new Exception($"Error: Los tipos de los operandos en la expresión binaria no coinciden. Left: {left.GetType()}, Right: {right.GetType()}");
         }
 
+        Console.WriteLine($"Comparando operandos: left = {left} ({left.GetType()}), right = {right} ({right.GetType()})");
+
+        // Operaciones aritméticas
         switch (expr.Operator.Type)
         {
             case TokenType.PLUS:
-                if (left is int && right is int) return (int)left + (int)right;
-                if (left is float && right is float) return (float)left + (float)right;
-                if (left is double && right is double) return (double)left + (double)right;
+                if (left is int && right is int)
+                    return (int)left + (int)right;
+                if (left is float && right is float)
+                    return (float)left + (float)right;
+                if (left is double && right is double)
+                    return (double)left + (double)right;
                 break;
             case TokenType.MINUS:
-                if (left is int && right is int) return (int)left - (int)right;
-                if (left is float && right is float) return (float)left - (float)right;
-                if (left is double && right is double) return (double)left - (double)right;
+                if (left is int && right is int)
+                    return (int)left - (int)right;
+                if (left is float && right is float)
+                    return (float)left - (float)right;
+                if (left is double && right is double)
+                    return (double)left - (double)right;
                 break;
             case TokenType.TIMES:
-                if (left is int && right is int) return (int)left * (int)right;
-                if (left is float && right is float) return (float)left * (float)right;
-                if (left is double && right is double) return (double)left * (double)right;
+                if (left is int && right is int)
+                    return (int)left * (int)right;
+                if (left is float && right is float)
+                    return (float)left * (float)right;
+                if (left is double && right is double)
+                    return (double)left * (double)right;
                 break;
             case TokenType.DIVIDE:
                 if (left is int && right is int)
                 {
-                    if ((int)right == 0) throw new Exception("Error: División por cero.");
+                    if ((int)right == 0)
+                        throw new Exception("Error: División por cero.");
                     return (int)left / (int)right;
                 }
                 if (left is float && right is float)
                 {
-                    if ((float)right == 0) throw new Exception("Error: División por cero.");
+                    if ((float)right == 0)
+                        throw new Exception("Error: División por cero.");
                     return (float)left / (float)right;
                 }
                 if (left is double && right is double)
                 {
-                    if ((double)right == 0) throw new Exception("Error: División por cero.");
+                    if ((double)right == 0)
+                        throw new Exception("Error: División por cero.");
                     return (double)left / (double)right;
                 }
                 break;
             case TokenType.MODULO:
-                if (left is int && right is int) return (int)left % (int)right;
-                if (left is float && right is float) return (float)left % (float)right;
-                if (left is double && right is double) return (double)left % (double)right;
+                if (left is int && right is int)
+                    return (int)left % (int)right;
+                if (left is float && right is float)
+                    return (float)left % (float)right;
+                if (left is double && right is double)
+                    return (double)left % (double)right;
                 break;
+
+            // Operaciones lógicas
+            case TokenType.AND:
+            case TokenType.OR:
+                if (left is bool && right is bool)
+                {
+                    return expr.Operator.Type == TokenType.AND ? (bool)left && (bool)right : (bool)left || (bool)right;
+                }
+                break;
+
+            // Operaciones de comparación
+            case TokenType.LESS_THAN:
+            case TokenType.LESS_EQUAL:
+            case TokenType.GREATER_THAN:
+            case TokenType.GREATER_EQUAL:
+                if (left is int && right is int)
+                    return expr.Operator.Type switch
+                    {
+                        TokenType.LESS_THAN => (int)left < (int)right,
+                        TokenType.LESS_EQUAL => (int)left <= (int)right,
+                        TokenType.GREATER_THAN => (int)left > (int)right,
+                        TokenType.GREATER_EQUAL => (int)left >= (int)right,
+                        _ => throw new Exception("Operador no válido para comparación.")
+                    };
+                if (left is float && right is float)
+                    return expr.Operator.Type switch
+                    {
+                        TokenType.LESS_THAN => (float)left < (float)right,
+                        TokenType.LESS_EQUAL => (float)left <= (float)right,
+                        TokenType.GREATER_THAN => (float)left > (float)right,
+                        TokenType.GREATER_EQUAL => (float)left >= (float)right,
+                        _ => throw new Exception("Operador no válido para comparación.")
+                    };
+                if (left is double && right is double)
+                    return expr.Operator.Type switch
+                    {
+                        TokenType.LESS_THAN => (double)left < (double)right,
+                        TokenType.LESS_EQUAL => (double)left <= (double)right,
+                        TokenType.GREATER_THAN => (double)left > (double)right,
+                        TokenType.GREATER_EQUAL => (double)left >= (double)right,
+                        _ => throw new Exception("Operador no válido para comparación.")
+                    };
+                break;
+
+            // Operaciones de igualdad
+            case TokenType.EQUAL:
+            case TokenType.NOT_EQUAL:
+                return expr.Operator.Type == TokenType.EQUAL ? Equals(left, right) : !Equals(left, right);
+
+            default:
+                throw new Exception($"Error: Operador '{expr.Operator.Lexeme}' no soportado en esta operación.");
         }
 
         throw new Exception($"Error: Operandos no compatibles para la operación '{expr.Operator.Lexeme}'");
@@ -105,134 +169,71 @@ public class SemanticAnalyzer : IVisitor<object?>
         var value = expr.Value.Accept(this);
         if (!currentScope.IsDefined(expr.Name.Lexeme))
         {
+
             throw new Exception($"Error: Variable '{expr.Name.Lexeme}' no está definida.");
         }
         currentScope.Assign(expr.Name.Lexeme, value ?? throw new Exception("Error: Asignación de un valor nulo."));
         return value;
     }
-
     public object? VisitCallExpression(CallExpression expr)
     {
         var callee = expr.Callee.Accept(this);
-
-        if (callee is FunctionDeclaration function)
+        if (callee == null || !(callee is FunctionDeclaration function))
         {
-            var optimizedFunction = optimizedAST.GetOptimizedFunction(function.Name.Lexeme);
-            if (optimizedFunction != null)
-            {
-                return ExecuteFunction(optimizedFunction, expr.Arguments);
-            }
-            return ExecuteFunction(new FunctionSubtree(function), expr.Arguments);
+            throw new Exception($"Error: Llamada a una función no definida o inválida.");
         }
 
-        throw new Exception($"Error: Llamada a una función no válida o no definida.");
-    }
-
-    private object? ExecuteFunction(FunctionSubtree functionSubtree, List<ASTNode> arguments)
-    {
-        FunctionDeclaration function = functionSubtree.Function;
+        // Verificar que la cantidad de argumentos coincida
+        if (function.Parameters.Count != expr.Arguments.Count)
+        {
+            throw new Exception("Error: Número incorrecto de argumentos en la llamada a la función.");
+        }
 
         // Crear un nuevo scope para la función
         var functionScope = currentScope.CreateChildScope();
+        var previousScope = currentScope;
         currentScope = functionScope;
 
-        // Mapear argumentos a los parámetros de la función
-        if (function.Parameters.Count != arguments.Count)
+        // Verificar que los tipos de los argumentos coincidan con los tipos de los parámetros
+        for (int i = 0; i < expr.Arguments.Count; i++)
         {
-            throw new Exception($"Error: La cantidad de argumentos no coincide con la cantidad de parámetros de la función {function.Name.Lexeme}.");
-        }
+            var argumentValue = expr.Arguments[i].Accept(this);
+            var param = function.Parameters[i];
 
-        for (int i = 0; i < function.Parameters.Count; i++)
-        {
-            var paramName = function.Parameters[i].Name.Lexeme;
-            var argumentValue = arguments[i].Accept(this);
-            currentScope.Define(paramName, argumentValue);
+            // Definir el parámetro con el valor del argumento en el nuevo scope
+            currentScope.Define(param.Name.Lexeme, argumentValue);
         }
 
         // Ejecutar el cuerpo de la función
-        object? result = null;
+        function.Body.Accept(this);
 
-        foreach (var statement in function.Body.Statements)
-        {
-            result = statement.Accept(this);
+        // Restaurar el scope anterior
+        currentScope = previousScope;
 
-            // Si se encuentra un valor de retorno, romper el ciclo
-            if (result is ReturnStatement returnStmt)
-            {
-                result = returnStmt.Value.Accept(this);
-                break;
-            }
-        }
-
-        // Volver al scope anterior
-        currentScope = currentScope.Parent;
-
-        return result;
+        return null;
     }
 
     public object? VisitFunctionDeclaration(FunctionDeclaration stmt)
+{
+    var functionScope = currentScope.CreateChildScope();
+    var previousScope = currentScope;
+    currentScope = functionScope;
+
+    // Definir los parámetros en el scope de la función
+    foreach (var param in stmt.Parameters)
     {
-        var functionScope = currentScope.CreateChildScope();
-        currentScope = functionScope;
-
-        foreach (var param in stmt.Parameters)
-        {
-            currentScope.Define(param.Name.Lexeme, null);
-        }
-
-        stmt.Body.Accept(this);
-
-        optimizedAST.AnalyzeAndOptimize(new List<ASTNode> { stmt });
-
-        currentScope = currentScope.Parent;
-
-        return null;
+        currentScope.DefineParameter(param.Name.Lexeme, null);
     }
 
-    // Soporte para declaración de clases
-    public object? VisitClassDeclaration(ClassDeclaration stmt)
-    {
-        // Verificar si la clase tiene una clase padre
-        if (stmt.ParentClass != null)
-        {
-            if (!currentScope.IsDefined(stmt.ParentClass.Lexeme))
-            {
-                throw new Exception($"Error: Clase base '{stmt.ParentClass.Lexeme}' no está definida.");
-            }
-        }
+    // Procesar el cuerpo de la función
+    stmt.Body.Accept(this);
 
-        // Definir la clase en el scope actual
-        currentScope.Define(stmt.Name.Lexeme, stmt);
+    // Restaurar el scope anterior
+    currentScope = previousScope;
 
-        // Crear un nuevo scope para los miembros de la clase
-        var classScope = currentScope.CreateChildScope();
-        currentScope = classScope;
+    return null;
+}
 
-        foreach (var member in stmt.Members)
-        {
-            member.Accept(this);
-        }
-
-        currentScope = currentScope.Parent;
-
-        return null;
-    }
-    public object? VisitClassMemberDeclaration(ClassMemberDeclaration stmt)
-    {
-        // Si el miembro es una función, lo analiza como una declaración de función.
-        if (stmt.Member is FunctionDeclaration function)
-        {
-            return VisitFunctionDeclaration(function);
-        }
-        // Si el miembro es una variable, lo analiza como una declaración de variable.
-        else if (stmt.Member is VariableDeclaration variable)
-        {
-            return VisitVariableDeclaration(variable);
-        }
-
-        // Si el tipo de miembro no es soportado, se lanza una excepción.
-        throw new Exception("Error: Miembro de clase no soportado.");
-    }
 
     public object? VisitVariableDeclaration(VariableDeclaration stmt)
     {
@@ -249,10 +250,11 @@ public class SemanticAnalyzer : IVisitor<object?>
     public object? VisitIfStatement(IfStatement stmt)
     {
         var condition = stmt.Condition.Accept(this);
+        Console.WriteLine($"Evaluando condición del 'if': {condition} (Tipo: {condition?.GetType()?.Name})");
 
-        if (condition is not bool)
+        if (condition == null || condition.GetType() != typeof(bool))
         {
-            throw new Exception("Error: La condición de la declaración 'if' debe ser booleana.");
+            throw new Exception("Error: La condición de la declaración 'if' no puede ser nula o no booleana.");
         }
 
         stmt.ThenBranch.Accept(this);
@@ -263,47 +265,80 @@ public class SemanticAnalyzer : IVisitor<object?>
     public object? VisitWhileStatement(WhileStatement stmt)
     {
         object? conditionResult = stmt.Condition.Accept(this);
+
+        if (conditionResult == null)
+        {
+            throw new Exception("Error: La condición de la declaración 'while' no puede ser nula.");
+        }
+
         if (conditionResult is not bool conditionValue)
         {
-            throw new Exception("Error: La condición de la declaración 'while' debe ser booleana.");
+            throw new Exception($"Error: La condición de la declaración 'while' debe ser booleana, pero es de tipo {conditionResult.GetType().Name}.");
         }
+
+        Console.WriteLine($"Evaluando condición del 'while': {conditionValue} (Tipo: {conditionValue.GetType().Name})");
 
         while (conditionValue)
         {
             stmt.Body.Accept(this);
+
+            // Re-evaluar la condición después de cada iteración
             conditionResult = stmt.Condition.Accept(this);
+
+            if (conditionResult == null)
+            {
+                throw new Exception("Error: La condición de la declaración 'while' se volvió nula durante la ejecución.");
+            }
+
             if (conditionResult is not bool newConditionValue)
             {
-                throw new Exception($"Error: La condición de la declaración 'while' debe ser booleana.");
+                throw new Exception($"Error: La condición de la declaración 'while' se volvió no booleana durante la ejecución. Tipo actual: {conditionResult.GetType().Name}.");
             }
+
             conditionValue = newConditionValue;
         }
+
+        Console.WriteLine("El 'while' ha terminado.");
         return null;
     }
-
     public object? VisitForStatement(ForStatement stmt)
     {
-        stmt.Initializer.Accept(this);
-        object? conditionResult = stmt.Condition.Accept(this);
+        // Crear un nuevo scope para el ciclo for
+        var forScope = currentScope.CreateChildScope();
+        var previousScope = currentScope;
+        currentScope = forScope;
 
-        if (conditionResult is not bool conditionValue)
+        // Evaluar la inicialización del ciclo
+        if (stmt.Initializer != null)
         {
-            throw new Exception("Error: La condición de la declaración 'for' debe ser booleana.");
+            stmt.Initializer.Accept(this);
         }
 
-        while (conditionValue)
+        // Evaluar la condición del ciclo (debe ser booleana)
+        if (stmt.Condition != null)
         {
-            stmt.Body.Accept(this);
-            stmt.Increment.Accept(this);
-            conditionResult = stmt.Condition.Accept(this);
-            if (conditionResult is not bool newConditionValue)
+            var condition = stmt.Condition.Accept(this);
+            if (condition == null || condition.GetType() != typeof(bool))
             {
-                throw new Exception($"Error: La condición de la declaración 'for' debe ser booleana.");
+                throw new Exception("Error: La condición del ciclo 'for' debe ser booleana.");
             }
-            conditionValue = newConditionValue;
         }
+
+        // Evaluar el cuerpo del ciclo
+        stmt.Body.Accept(this);
+
+        // Evaluar la expresión de incremento
+        if (stmt.Increment != null)
+        {
+            stmt.Increment.Accept(this);
+        }
+
+        // Restaurar el scope anterior
+        currentScope = previousScope;
+
         return null;
     }
+
 
     public object? VisitBlockStatement(BlockStatement stmt)
     {
@@ -327,10 +362,11 @@ public class SemanticAnalyzer : IVisitor<object?>
             throw new Exception("Error: La instrucción 'return' solo puede usarse dentro de una función.");
         }
 
+        // Validar que el tipo de retorno coincida con el tipo de la función actual
         var returnValue = stmt.Value?.Accept(this);
         if (returnValue != null && returnValue.GetType() != currentReturnType)
         {
-            throw new Exception($"Error: Tipo de retorno no coincide con el esperado.");
+            throw new Exception($"Error: Tipo de retorno no coincide con el esperado. Se esperaba {currentReturnType}, pero se encontró {returnValue.GetType()}.");
         }
 
         return returnValue;
@@ -395,11 +431,12 @@ public class SemanticAnalyzer : IVisitor<object?>
         }
         var trueExpr = expr.TrueExpr.Accept(this);
         var falseExpr = expr.FalseExpr.Accept(this);
-        return (bool)condition ? trueExpr : falseExpr;
+        return condition != null ? trueExpr : falseExpr;
     }
 
     public object? VisitLambdaExpression(LambdaExpression expr)
     {
+        // Las expresiones lambda se tratan como funciones anónimas.
         currentScope.Define("lambda", expr);
         return expr;
     }

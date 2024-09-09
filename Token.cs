@@ -3,42 +3,116 @@ using System;
 public enum TokenType
 {
     // Literales
-    NUMBER, FLOAT, HEX_NUMBER, BIN_NUMBER, STRING, CHARACTER, TRUE, FALSE, NULL,
+    NUMBER,
+    FLOAT,
+    HEX_NUMBER,
+    BIN_NUMBER,
+    STRING,
+    CHARACTER,
+    TRUE,
+    FALSE,
+    NULL,
 
     // Identificadores
     ID,
-
     // Operadores aritméticos
-    PLUS, MINUS, TIMES, DIVIDE, MODULO,
+    PLUS,       // +
+    MINUS,      // -
+    TIMES,      // *
+    DIVIDE,     // /
+    MODULO,     // %
 
     // Operadores de comparación
-    EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL,
+    EQUAL,      // ==
+    NOT_EQUAL,  // !=
+    LESS_THAN,  // <
+    GREATER_THAN, // >
+    LESS_EQUAL,  // <=
+    GREATER_EQUAL, // >=
 
     // Operadores lógicos
-    AND, OR, NOT,
+    AND,        // &&
+    OR,         // ||
+    NOT,        // !
 
     // Operadores de asignación
-    ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, TIMES_ASSIGN, DIVIDE_ASSIGN, MODULO_ASSIGN,
-    AND_ASSIGN, OR_ASSIGN, XOR_ASSIGN, SHIFT_LEFT_ASSIGN, SHIFT_RIGHT_ASSIGN,
+    ASSIGN,     // =
+    PLUS_ASSIGN, // +=
+    MINUS_ASSIGN, // -=
+    TIMES_ASSIGN, // *=
+    DIVIDE_ASSIGN, // /=
+    MODULO_ASSIGN, // %=
+    AND_ASSIGN,    // &=
+    OR_ASSIGN,     // |=
+    XOR_ASSIGN,    // ^=
+    SHIFT_LEFT_ASSIGN, // <<=
+    SHIFT_RIGHT_ASSIGN, // >>=
 
-    // Operadores de incremento y decremento
-    INCREMENT, DECREMENT,
+    // Operadores de Incremento y Decremento
+    INCREMENT,  // ++
+    DECREMENT,  // --
 
-    // Operadores bit a bit
-    BIT_AND, BIT_OR, BIT_XOR, BIT_NOT, SHIFT_LEFT, SHIFT_RIGHT, ARROW,
+    // Operadores Bit a Bit
+    BIT_AND,    // &
+    BIT_OR,     // |
+    BIT_XOR,    // ^
+    BIT_NOT,    // ~
+    SHIFT_LEFT, // <<
+    SHIFT_RIGHT, // >>
+    ARROW,      // ->
 
     // Separadores
-    COMMA, SEMICOLON, COLON, DOT, QUESTION, HASH, DOLLAR, BACKSLASH, BACKTICK,
+    COMMA,      // ,
+    SEMICOLON,  // ;
+    COLON,      // :
+    DOT,        // .
+    QUESTION,   // ?
+    HASH,       // #
+    DOLLAR,     // $
+    BACKSLASH,  // \
+    BACKTICK,   // `
 
     // Corchetes
-    LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET,
+    LPAREN,     // (
+    RPAREN,     // )
+    LBRACE,     // {
+    RBRACE,     // }
+    LBRACKET,   // [
+    RBRACKET,   // ]
 
     // Palabras clave
-    IF, ELSE, WHILE, FOR, RETURN, FUN, TYPE, STRUCT, ENUM, IMPORT, TRY, CATCH, FINALLY, THROW,
-    BREAK, CONTINUE, SWITCH, CASE, DEFAULT, CLASS, EXTENDS, PUBLIC, PRIVATE, PROTECTED,
+    IF,
+    ELSE,
+    WHILE,
+    FOR,
+    RETURN,
+    FUN,        // Function declaration
+    TYPE,       // int, float, char, bool, void, string
+    STRUCT,
+    ENUM,
+    IMPORT,
+    TRY,
+    CATCH,
+    FINALLY,
+    THROW,
+    // Control de flujo
+    BREAK,
+    CONTINUE,
+    SWITCH,
+    CASE,
+    DEFAULT,
+    CLASS,
+    PUBLIC,
+    PRIVATE,
+    PROTECTED,
+    STATIC,
+    VOID,
+    CONSOLE_WRITELINE,
 
     // Otros
-    EOF
+    EOF,
+    
+
 }
 
 public class Token
@@ -60,15 +134,15 @@ public class Token
 
     public override string ToString() => $"{Type} {Lexeme} {Literal} (Line: {Line}, Column: {Column})";
 
-    public override bool Equals(object? obj) =>
-        obj is Token other && Type == other.Type && Lexeme == other.Lexeme &&
-        Equals(Literal, other.Literal) && Line == other.Line && Column == other.Column;
+    public bool Equals(Token? other) =>
+        other != null &&
+        Type == other.Type &&
+        Lexeme == other.Lexeme &&
+        Equals(Literal, other.Literal) &&
+        Line == other.Line &&
+        Column == other.Column;
+
+    public override bool Equals(object? obj) => Equals(obj as Token);
 
     public override int GetHashCode() => HashCode.Combine(Type, Lexeme, Literal, Line, Column);
-
-    // Método para obtener más información detallada sobre errores
-    public static string GetDetailedErrorInfo(Token token, string message)
-    {
-        return $"Error at line {token.Line}, column {token.Column}: {message}. Token: {token.Lexeme}";
-    }
 }

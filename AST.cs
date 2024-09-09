@@ -37,10 +37,6 @@ public interface IVisitor<T>
     T VisitCaseStatement(CaseStatement stmt);
     T VisitBreakStatement(BreakStatement stmt);
     T VisitContinueStatement(ContinueStatement stmt);
-
-    // Nuevos nodos para clases, herencia y visibilidad
-    T VisitClassDeclaration(ClassDeclaration stmt);
-    T VisitClassMemberDeclaration(ClassMemberDeclaration stmt);
 }
 
 public class BinaryExpression : ASTNode
@@ -100,7 +96,15 @@ public class GroupingExpression : ASTNode
 
     public GroupingExpression(ASTNode expression)
     {
-        Expression = expression;
+        Console.WriteLine("Flattening nested grouping expression");
+        if (expression is GroupingExpression innerGroup)
+        {
+            Expression = innerGroup.Expression;
+        }
+        else
+        {
+            Expression = expression;
+        }
     }
 
     public override T Accept<T>(IVisitor<T> visitor)
@@ -108,6 +112,7 @@ public class GroupingExpression : ASTNode
         return visitor.VisitGroupingExpression(this);
     }
 }
+
 
 public class VariableExpression : ASTNode
 {
@@ -159,7 +164,6 @@ public class CallExpression : ASTNode
         return visitor.VisitCallExpression(this);
     }
 }
-
 public class LogicalExpression : ASTNode
 {
     public ASTNode Left { get; }
@@ -184,14 +188,12 @@ public class VariableDeclaration : ASTNode
     public Token Type { get; }
     public Token Name { get; }
     public ASTNode? Initializer { get; }
-    public TokenType? Visibility { get; }  // Visibilidad añadida
 
-    public VariableDeclaration(Token type, Token name, ASTNode? initializer, TokenType? visibility = null)
+    public VariableDeclaration(Token type, Token name, ASTNode? initializer)
     {
         Type = type;
         Name = name;
         Initializer = initializer;
-        Visibility = visibility;
     }
 
     public override T Accept<T>(IVisitor<T> visitor)
@@ -205,14 +207,12 @@ public class FunctionDeclaration : ASTNode
     public Token Name { get; }
     public List<VariableDeclaration> Parameters { get; }
     public BlockStatement Body { get; }
-    public TokenType? Visibility { get; }  // Visibilidad añadida
 
-    public FunctionDeclaration(Token name, List<VariableDeclaration> parameters, BlockStatement body, TokenType? visibility = null)
+    public FunctionDeclaration(Token name, List<VariableDeclaration> parameters, BlockStatement body)
     {
         Name = name;
         Parameters = parameters;
         Body = body;
-        Visibility = visibility;
     }
 
     public override T Accept<T>(IVisitor<T> visitor)
@@ -291,6 +291,7 @@ public class ForStatement : ASTNode
     {
         return visitor.VisitForStatement(this);
     }
+
 }
 
 public class BlockStatement : ASTNode
@@ -324,49 +325,6 @@ public class ReturnStatement : ASTNode
         return visitor.VisitReturnStatement(this);
     }
 }
-
-// Nodos para soporte de clases
-public class ClassDeclaration : ASTNode
-{
-    public Token Name { get; }
-    public Token? ParentClass { get; }
-    public List<ASTNode> Members { get; }
-    public TokenType? Visibility { get; }
-    
-
-    public ClassDeclaration(Token name, Token? parentClass, List<ASTNode> members, TokenType? visibility)
-    {
-        Name = name;
-        ParentClass = parentClass;
-        Members = members;
-        Visibility = visibility;
-    }
-
-    public override T Accept<T>(IVisitor<T> visitor)
-    {
-        return visitor.VisitClassDeclaration(this);
-    }
-}
-
-public class ClassMemberDeclaration : ASTNode
-{
-    public ASTNode Member { get; }
-    public TokenType? Visibility { get; }
-
-    public ClassMemberDeclaration(ASTNode member, TokenType? visibility)
-    {
-        Member = member;
-        Visibility = visibility;
-    }
-
-    public override T Accept<T>(IVisitor<T> visitor)
-    {
-        return visitor.VisitClassMemberDeclaration(this);
-    }
-}
-
-
-
 public class SwitchStatement : ASTNode
 {
     public ASTNode Expression { get; }
@@ -418,7 +376,6 @@ public class ContinueStatement : ASTNode
         return visitor.VisitContinueStatement(this);
     }
 }
-
 public class ArrayDeclaration : ASTNode
 {
     public Token Type { get; }

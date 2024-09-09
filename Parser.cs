@@ -1,15 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-public class ParserException : Exception
-{
-    public Token Token { get; }
-    public ParserException(string message, Token token) : base(message)
-    {
-        Token = token;
-    }
-}
-
 public class Parser
 {
     private readonly List<Token> tokens;
@@ -25,27 +16,17 @@ public class Parser
         List<ASTNode> statements = new List<ASTNode>();
         while (!IsAtEnd())
         {
-            ASTNode? declaration = Declaration();
-            if (declaration != null)
-            {
-                statements.Add(declaration);
-            }
+            statements.Add(Declaration());
         }
         return statements;
     }
 
-    private ASTNode? Declaration()
+    private ASTNode Declaration()
     {
         try
         {
-            if (Match(TokenType.TYPE))
-            {
-                return VariableDeclaration();
-            }
-            if (Match(TokenType.FUN))
-            {
-                return FunctionDeclaration();
-            }
+            if (Match(TokenType.FUN)) return FunctionDeclaration();
+            if (Match(TokenType.TYPE)) return VariableDeclaration();
             return Statement();
         }
         catch (ParserException)
@@ -55,76 +36,42 @@ public class Parser
         }
     }
 
-    private ASTNode VariableDeclaration()
+    private ASTNode FunctionDeclaration()
+    {
+        Token name = Consume(TokenType.ID, "Expected function name.");
+        Consume(TokenType.LPAREN, "Expected '(' after function name.");
+
+        List<VariableDeclaration> parameters = new List<VariableDeclaration>();
+        if (!Check(TokenType.RPAREN))
+        {
+            do
+            {
+                Token paramType = Consume(TokenType.TYPE, "Expected parameter type.");
+                Token paramName = Consume(TokenType.ID, "Expected parameter name.");
+                parameters.Add(new VariableDeclaration(paramType, paramName, null));
+            } while (Match(TokenType.COMMA));
+        }
+        Consume(TokenType.RPAREN, "Expected ')' after parameters.");
+        Consume(TokenType.LBRACE, "Expected '{' before function body.");
+
+        BlockStatement body = Block();
+        return new FunctionDeclaration(name, parameters, body);
+    }
+
+    private VariableDeclaration VariableDeclaration()
     {
         Token type = Previous();
-        Token name = Consume(TokenType.ID, "Expect variable name.");
-        Console.WriteLine($"Parsing VariableDeclaration: Type = {type.Lexeme}, Name = {name.Lexeme}");
+        Token name = Consume(TokenType.ID, "Expected variable name.");
 
         ASTNode? initializer = null;
         if (Match(TokenType.ASSIGN))
         {
-            Console.WriteLine("Parsing VariableDeclaration: Found assignment operator.");
             initializer = Expression();
         }
-        else if (Match(TokenType.LBRACKET))
-        {
-            Console.WriteLine("Parsing VariableDeclaration: Found array declaration.");
-            ASTNode size = Expression();
-            Consume(TokenType.RBRACKET, "Expect ']' after array size.");
-            if (Match(TokenType.ASSIGN))
-            {
-                Console.WriteLine("Parsing VariableDeclaration: Found array initializer.");
-                List<ASTNode> elements = new List<ASTNode>();
-                if (Match(TokenType.LBRACE))
-                {
-                    if (!Check(TokenType.RBRACE))
-                    {
-                        do
-                        {
-                            elements.Add(Expression());
-                        } while (Match(TokenType.COMMA));
-                    }
-                    Consume(TokenType.RBRACE, "Expect '}' after array initializer.");
-                }
-                initializer = new ArrayDeclaration(type, name, size, elements);
-            }
-            else
-            {
-                initializer = new ArrayDeclaration(type, name, size, new List<ASTNode>());
-            }
-        }
 
-        Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        Console.WriteLine($"Completed VariableDeclaration for {name.Lexeme}");
-        return new VariableDeclaration(type, name, initializer ?? new LiteralExpression(null));
+        Consume(TokenType.SEMICOLON, "Expected ';' after variable declaration.");
+        return new VariableDeclaration(type, name, initializer);
     }
-
-    private ASTNode FunctionDeclaration()
-{
-    Token name = Consume(TokenType.ID, "Expect function name.");
-    Consume(TokenType.LPAREN, "Expect '(' after function name.");
-    List<VariableDeclaration> parameters = new List<VariableDeclaration>();
-    if (!Check(TokenType.RPAREN))
-    {
-        do
-        {
-            if (parameters.Count >= 255)
-            {
-                Error(Peek(), "Can't have more than 255 parameters.");
-            }
-
-            Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
-            Token paramName = Consume(TokenType.ID, "Expect parameter name.");
-            parameters.Add(new VariableDeclaration(paramType, paramName, null));
-        } while (Match(TokenType.COMMA));
-    }
-    Consume(TokenType.RPAREN, "Expect ')' after parameters.");
-
-    Consume(TokenType.LBRACE, "Expect '{' before function body.");
-    BlockStatement body = (BlockStatement)Block();
-    return new FunctionDeclaration(name, parameters, body);
-}
 
     private ASTNode Statement()
     {
@@ -133,36 +80,30 @@ public class Parser
         if (Match(TokenType.FOR)) return ForStatement();
         if (Match(TokenType.RETURN)) return ReturnStatement();
         if (Match(TokenType.LBRACE)) return Block();
-
         return ExpressionStatement();
     }
 
     private ASTNode IfStatement()
     {
-        Console.WriteLine("Parsing IfStatement");
-        Consume(TokenType.LPAREN, "Expect '(' after 'if'.");
+        Consume(TokenType.LPAREN, "Expected '(' after 'if'.");
         ASTNode condition = Expression();
-        Console.WriteLine("IfStatement: Parsed condition");
-        Consume(TokenType.RPAREN, "Expect ')' after if condition.");
-
+        Consume(TokenType.RPAREN, "Expected ')' after if condition.");
 
         ASTNode thenBranch = Statement();
-        Console.WriteLine("IfStatement: Parsed then branch");
-        ASTNode? elseBranch = null;
+        ASTNode elseBranch = null;
         if (Match(TokenType.ELSE))
         {
-            Console.WriteLine("IfStatement: Found else branch");
             elseBranch = Statement();
         }
-        Console.WriteLine("Completed IfStatement");
-        return new IfStatement(condition, thenBranch, elseBranch ?? new BlockStatement(new List<ASTNode>()));
+
+        return new IfStatement(condition, thenBranch, elseBranch);
     }
 
     private ASTNode WhileStatement()
     {
-        Consume(TokenType.LPAREN, "Expect '(' after 'while'.");
+        Consume(TokenType.LPAREN, "Expected '(' after 'while'.");
         ASTNode condition = Expression();
-        Consume(TokenType.RPAREN, "Expect ')' after while condition.");
+        Consume(TokenType.RPAREN, "Expected ')' after condition.");
         ASTNode body = Statement();
 
         return new WhileStatement(condition, body);
@@ -170,97 +111,47 @@ public class Parser
 
     private ASTNode ForStatement()
     {
-        Consume(TokenType.LPAREN, "Expect '(' after 'for'.");
-
-        ASTNode? initializer;
-        if (Match(TokenType.SEMICOLON))
-        {
-            initializer = null;
-        }
-        else if (Match(TokenType.TYPE))
-        {
-            initializer = VariableDeclaration();
-        }
-        else
-        {
-            initializer = ExpressionStatement();
-        }
-
-        ASTNode condition = new LiteralExpression(true);
-        if (!Check(TokenType.SEMICOLON))
-        {
-            condition = Expression();
-        }
-        Consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
-
-        ASTNode? increment = null;
-        if (!Check(TokenType.RPAREN))
-        {
-            increment = Expression();
-        }
-        Consume(TokenType.RPAREN, "Expect ')' after for clauses.");
-
+        Consume(TokenType.LPAREN, "Expected '(' after 'for'.");
+        ASTNode initializer = Match(TokenType.SEMICOLON) ? null : VariableDeclaration();
+        ASTNode condition = Match(TokenType.SEMICOLON) ? null : Expression();
+        Consume(TokenType.SEMICOLON, "Expected ';' after loop condition.");
+        ASTNode increment = Match(TokenType.RPAREN) ? null : Expression();
+        Consume(TokenType.RPAREN, "Expected ')' after for clauses.");
         ASTNode body = Statement();
 
-        if (increment != null)
-        {
-            body = new BlockStatement(new List<ASTNode>
-            {
-                body,
-                new ExpressionStatement(increment)
-            });
-        }
-
-        body = new WhileStatement(condition, body);
-
-        if (initializer != null)
-        {
-            body = new BlockStatement(new List<ASTNode>
-            {
-                initializer,
-                body
-            });
-        }
-
-        return body;
+        return new ForStatement(initializer, condition, increment, body);
     }
 
     private ASTNode ReturnStatement()
     {
         Token keyword = Previous();
-        ASTNode value = new LiteralExpression(null);
+        ASTNode value = null;
         if (!Check(TokenType.SEMICOLON))
         {
             value = Expression();
         }
-        Consume(TokenType.SEMICOLON, "Expect ';' after return value.");
+
+        Consume(TokenType.SEMICOLON, "Expected ';' after return value.");
         return new ReturnStatement(keyword, value);
     }
 
-    private ASTNode Block()
+    private BlockStatement Block()
     {
-        Console.WriteLine("Parsing BlockStatement");
         List<ASTNode> statements = new List<ASTNode>();
 
         while (!Check(TokenType.RBRACE) && !IsAtEnd())
         {
-            ASTNode? declaration = Declaration();
-            if (declaration != null)
-            {
-                statements.Add(declaration);
-                Console.WriteLine("BlockStatement: Added declaration");
-            }
+            statements.Add(Declaration());
         }
 
-        Consume(TokenType.RBRACE, "Expect '}' after block.");
-        Console.WriteLine("Completed BlockStatement");
+        Consume(TokenType.RBRACE, "Expected '}' after block.");
         return new BlockStatement(statements);
     }
 
     private ASTNode ExpressionStatement()
     {
         ASTNode expr = Expression();
-        Consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+        Consume(TokenType.SEMICOLON, "Expected ';' after expression.");
         return new ExpressionStatement(expr);
     }
 
@@ -271,48 +162,40 @@ public class Parser
 
     private ASTNode Assignment()
     {
-        ASTNode expr = LogicalOr();
-        Console.WriteLine("Assignment: Parsed left-hand expression");
+        ASTNode expr = Or();
 
         if (Match(TokenType.ASSIGN))
         {
             Token equals = Previous();
-            ASTNode value = Expression();
-            Console.WriteLine("Assignment: Found assignment operator and right-hand expression");
+            ASTNode value = Assignment();
 
-            if (expr is VariableExpression ve)
+            if (expr is VariableExpression)
             {
-                Token name = ve.Name;
-                Console.WriteLine($"Assignment: Variable {name.Lexeme}");
+                Token name = ((VariableExpression)expr).Name;
                 return new AssignmentExpression(name, value);
             }
-            else if (expr is ArrayAccess aa)
-            {
-                Console.WriteLine("Assignment: Array access assignment");
-                return new ArrayAssignmentExpression(aa.Array, aa.Index, value);
-            }
 
-            throw Error(equals, "Invalid assignment target.");
+            throw new ParserException($"Invalid assignment target at line {equals.Line}.");
         }
 
         return expr;
     }
 
-    private ASTNode LogicalOr()
+    private ASTNode Or()
     {
-        ASTNode expr = LogicalAnd();
+        ASTNode expr = And();
 
         while (Match(TokenType.OR))
         {
             Token op = Previous();
-            ASTNode right = LogicalAnd();
-            expr = new BinaryExpression(expr, op, right);
+            ASTNode right = And();
+            expr = new LogicalExpression(expr, op, right);
         }
 
         return expr;
     }
 
-    private ASTNode LogicalAnd()
+    private ASTNode And()
     {
         ASTNode expr = Equality();
 
@@ -320,7 +203,7 @@ public class Parser
         {
             Token op = Previous();
             ASTNode right = Equality();
-            expr = new BinaryExpression(expr, op, right);
+            expr = new LogicalExpression(expr, op, right);
         }
 
         return expr;
@@ -344,7 +227,7 @@ public class Parser
     {
         ASTNode expr = Term();
 
-        while (Match(TokenType.GREATER_THAN, TokenType.GREATER_EQUAL, TokenType.LESS_THAN, TokenType.LESS_EQUAL))
+        while (Match(TokenType.LESS_THAN, TokenType.GREATER_THAN, TokenType.LESS_EQUAL, TokenType.GREATER_EQUAL))
         {
             Token op = Previous();
             ASTNode right = Term();
@@ -372,7 +255,7 @@ public class Parser
     {
         ASTNode expr = Unary();
 
-        while (Match(TokenType.TIMES, TokenType.DIVIDE, TokenType.MODULO))
+        while (Match(TokenType.TIMES, TokenType.DIVIDE))
         {
             Token op = Previous();
             ASTNode right = Unary();
@@ -391,46 +274,7 @@ public class Parser
             return new UnaryExpression(op, right);
         }
 
-        return Call();
-    }
-
-    private ASTNode Call()
-    {
-        ASTNode expr = Primary();
-
-        while (true)
-        {
-            if (Match(TokenType.LPAREN))
-            {
-                expr = FinishCall(expr);
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return expr;
-    }
-
-    private ASTNode FinishCall(ASTNode callee)
-    {
-        List<ASTNode> arguments = new List<ASTNode>();
-        if (!Check(TokenType.RPAREN))
-        {
-            do
-            {
-                if (arguments.Count >= 255)
-                {
-                    Error(Peek(), "Can't have more than 255 arguments.");
-                }
-                arguments.Add(Expression());
-            } while (Match(TokenType.COMMA));
-        }
-
-        Token paren = Consume(TokenType.RPAREN, "Expect ')' after arguments.");
-
-        return new CallExpression(callee, paren, arguments);
+        return Primary();
     }
 
     private ASTNode Primary()
@@ -439,31 +283,24 @@ public class Parser
         if (Match(TokenType.TRUE)) return new LiteralExpression(true);
         if (Match(TokenType.NULL)) return new LiteralExpression(null);
 
-        if (Match(TokenType.NUMBER, TokenType.STRING))
+        if (Match(TokenType.NUMBER, TokenType.STRING, TokenType.CHARACTER))
         {
             return new LiteralExpression(Previous().Literal);
         }
 
         if (Match(TokenType.ID))
         {
-            Token name = Previous();
-            if (Match(TokenType.LBRACKET))
-            {
-                ASTNode index = Expression();
-                Consume(TokenType.RBRACKET, "Expect ']' after array index.");
-                return new ArrayAccess(new VariableExpression(name), index);
-            }
-            return new VariableExpression(name);
+            return new VariableExpression(Previous());
         }
 
         if (Match(TokenType.LPAREN))
         {
             ASTNode expr = Expression();
-            Consume(TokenType.RPAREN, "Expect ')' after expression.");
+            Consume(TokenType.RPAREN, "Expected ')' after expression.");
             return new GroupingExpression(expr);
         }
 
-        throw Error(Peek(), "Expect expression.");
+        throw new ParserException("Expected expression.");
     }
 
     private bool Match(params TokenType[] types)
@@ -476,6 +313,7 @@ public class Parser
                 return true;
             }
         }
+
         return false;
     }
 
@@ -509,12 +347,8 @@ public class Parser
     private Token Consume(TokenType type, string message)
     {
         if (Check(type)) return Advance();
-        throw Error(Peek(), message);
-    }
 
-    private ParserException Error(Token token, string message)
-    {
-        return new ParserException(message, token);
+        throw new ParserException(message);
     }
 
     private void Synchronize()
@@ -527,8 +361,6 @@ public class Parser
 
             switch (Peek().Type)
             {
-                case TokenType.TYPE:
-                case TokenType.FUN:
                 case TokenType.IF:
                 case TokenType.WHILE:
                 case TokenType.FOR:
@@ -539,4 +371,9 @@ public class Parser
             Advance();
         }
     }
+}
+
+public class ParserException : Exception
+{
+    public ParserException(string message) : base(message) { }
 }

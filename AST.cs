@@ -96,15 +96,7 @@ public class GroupingExpression : ASTNode
 
     public GroupingExpression(ASTNode expression)
     {
-        Console.WriteLine("Flattening nested grouping expression");
-        if (expression is GroupingExpression innerGroup)
-        {
-            Expression = innerGroup.Expression;
-        }
-        else
-        {
-            Expression = expression;
-        }
+        Expression = expression;
     }
 
     public override T Accept<T>(IVisitor<T> visitor)
@@ -112,7 +104,6 @@ public class GroupingExpression : ASTNode
         return visitor.VisitGroupingExpression(this);
     }
 }
-
 
 public class VariableExpression : ASTNode
 {
@@ -164,6 +155,7 @@ public class CallExpression : ASTNode
         return visitor.VisitCallExpression(this);
     }
 }
+
 public class LogicalExpression : ASTNode
 {
     public ASTNode Left { get; }
@@ -291,7 +283,6 @@ public class ForStatement : ASTNode
     {
         return visitor.VisitForStatement(this);
     }
-
 }
 
 public class BlockStatement : ASTNode
@@ -325,6 +316,7 @@ public class ReturnStatement : ASTNode
         return visitor.VisitReturnStatement(this);
     }
 }
+
 public class SwitchStatement : ASTNode
 {
     public ASTNode Expression { get; }
@@ -376,6 +368,7 @@ public class ContinueStatement : ASTNode
         return visitor.VisitContinueStatement(this);
     }
 }
+
 public class ArrayDeclaration : ASTNode
 {
     public Token Type { get; }

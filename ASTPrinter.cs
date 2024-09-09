@@ -1,220 +1,217 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+    using System;
+    using System.Text;
+    using System.Collections.Generic;
 
-public class ASTPrinter : IVisitor<string>
-{
-    public string VisitBinaryExpression(BinaryExpression expr)
+    public class ASTPrinter : IVisitor<string>
     {
-        string left = expr.Left.Accept(this);
-        string right = expr.Right.Accept(this);
-        return $"({left} {expr.Operator.Lexeme} {right})";
-    }
+        private OptimizedAST optimizedAST;
 
-    public string VisitUnaryExpression(UnaryExpression expr)
-    {
-        string right = expr.Right.Accept(this);
-        return $"({expr.Operator.Lexeme}{right})";
-    }
-
-    public string VisitLiteralExpression(LiteralExpression expr)
-    {
-        return expr.Value?.ToString() ?? "null";
-    }
-    public string VisitGroupingExpression(GroupingExpression expr)
-    {
-        string expression = expr.Expression.Accept(this);
-        Console.WriteLine($"Printing grouping expression: {expression}");
-        return $"({expression})";
-    }
-
-    public string VisitVariableExpression(VariableExpression expr)
-    {
-        return expr.Name.Lexeme;
-    }
-
-    public string VisitAssignmentExpression(AssignmentExpression expr)
-    {
-        string name = expr.Name.Lexeme;
-        string value = expr.Value.Accept(this);
-        return $"{name} = {value}";
-    }
-
-    public string VisitCallExpression(CallExpression expr)
-    {
-        string callee = expr.Callee.Accept(this);
-        string arguments = string.Join(", ", expr.Arguments.ConvertAll(arg => arg.Accept(this)));
-        return $"{callee}({arguments})";
-    }
-
-    public string VisitArrayAccess(ArrayAccess expr)
-    {
-        string array = expr.Array.Accept(this);
-        string index = expr.Index.Accept(this);
-        return $"{array}[{index}]";
-    }
-
-    public string VisitArrayAssignmentExpression(ArrayAssignmentExpression expr)
-    {
-        string arrayAccess = expr.Array.Accept(this);
-        string index = expr.Index.Accept(this);
-        string value = expr.Value.Accept(this);
-        return $"{arrayAccess}[{index}] = {value}";
-    }
-
-    public string VisitLogicalExpression(LogicalExpression expr)
-    {
-        string left = expr.Left.Accept(this);
-        string right = expr.Right.Accept(this);
-        return $"({left} {expr.Operator.Lexeme} {right})";
-    }
-
-    public string VisitTernaryExpression(TernaryExpression expr)
-    {
-        string condition = expr.Condition.Accept(this);
-        string trueExpr = expr.TrueExpr.Accept(this);
-        string falseExpr = expr.FalseExpr.Accept(this);
-        return $"({condition} ? {trueExpr} : {falseExpr})";
-    }
-
-    public string VisitLambdaExpression(LambdaExpression expr)
-    {
-        string parameters = string.Join(", ", expr.Parameters.ConvertAll(param => param.Accept(this)));
-        string body = expr.Body.Accept(this);
-        return $"({parameters}) => {body}";
-    }
-
-    public string VisitThrowStatement(ThrowStatement stmt)
-    {
-        string expression = stmt.Expression.Accept(this);
-        return $"throw {expression};";
-    }
-
-    public string VisitVariableDeclaration(VariableDeclaration stmt)
-    {
-        string type = stmt.Type.Lexeme;
-        string name = stmt.Name.Lexeme;
-        string? initializer = stmt.Initializer?.Accept(this);
-        return $"{type} {name} = {initializer};";
-    }
-    public string VisitFunctionDeclaration(FunctionDeclaration stmt)
-{
-    string name = stmt.Name.Lexeme;
-    string parameters = string.Join(", ", stmt.Parameters.Select(param => $"{param.Type.Lexeme} {param.Name.Lexeme}"));
-    string body = stmt.Body.Accept(this);
-    return $"function {name}({parameters}) {body}";
-}
-
-    public string VisitExpressionStatement(ExpressionStatement stmt)
-    {
-        string expression = stmt.Expression.Accept(this);
-        return $"{expression};";
-    }
-
-    public string VisitIfStatement(IfStatement stmt)
-    {
-        string condition = stmt.Condition.Accept(this);
-        string thenBranch = stmt.ThenBranch.Accept(this);
-        string elseBranch = stmt.ElseBranch != null ? $" else {stmt.ElseBranch.Accept(this)}" : string.Empty;
-        return $"if ({condition}) {thenBranch}{elseBranch}";
-    }
-
-    public string VisitWhileStatement(WhileStatement stmt)
-    {
-        string condition = stmt.Condition.Accept(this);
-        string body = stmt.Body.Accept(this);
-        return $"while ({condition}) {body}";
-    }
-
-    public string VisitForStatement(ForStatement stmt)
-    {
-        string initializer = stmt.Initializer.Accept(this);
-        string condition = stmt.Condition.Accept(this);
-        string increment = stmt.Increment.Accept(this);
-        string body = stmt.Body.Accept(this);
-        return $"for ({initializer}; {condition}; {increment}) {body}";
-    }
-
-    public string VisitBlockStatement(BlockStatement stmt)
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.AppendLine("{");
-        foreach (var statement in stmt.Statements)
+        public ASTPrinter(OptimizedAST optimizedAST)
         {
-            string stmtString = statement.Accept(this);
-            builder.AppendLine($"  {stmtString}");
+            this.optimizedAST = optimizedAST;
         }
-        builder.Append("}");
-        return builder.ToString();
-    }
 
-    public string VisitReturnStatement(ReturnStatement stmt)
-    {
-        string value = stmt.Value.Accept(this);
-        return $"return {value};";
-    }
+        public string Print(ASTNode node)
+        {
+            return node.Accept(this);
+        }
 
-    public string VisitArrayDeclaration(ArrayDeclaration stmt)
-    {
-        string type = stmt.Type.Lexeme;
-        string name = stmt.Name.Lexeme;
-        string size = stmt.Size.Accept(this);
-        string initializer = stmt.Initializer.Count > 0
-            ? $" = {{ {string.Join(", ", stmt.Initializer.ConvertAll(init => init.Accept(this)))} }}"
-            : string.Empty;
-        return $"{type} {name}[{size}]{initializer};";
-    }
+        public string VisitBinaryExpression(BinaryExpression expr)
+        {
+            return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
+        }
 
-    public string VisitStructDeclaration(StructDeclaration stmt)
-    {
-        string name = stmt.Name.Lexeme;
-        string fields = string.Join("\n  ", stmt.Fields.ConvertAll(field => field.Accept(this)));
-        return $"struct {name} {{\n  {fields}\n}}";
-    }
+        public string VisitUnaryExpression(UnaryExpression expr)
+        {
+            return Parenthesize(expr.Operator.Lexeme, expr.Right);
+        }
 
-    public string VisitEnumDeclaration(EnumDeclaration stmt)
-    {
-        string name = stmt.Name.Lexeme;
-        string values = string.Join(", ", stmt.Values.ConvertAll(value => value.Lexeme));
-        return $"enum {name} {{ {values} }}";
-    }
+        public string VisitLiteralExpression(LiteralExpression expr)
+        {
+            return expr.Value?.ToString() ?? "null";
+        }
 
-    public string VisitImportStatement(ImportStatement stmt)
-    {
-        return $"import {stmt.Module.Lexeme};";
-    }
+        public string VisitGroupingExpression(GroupingExpression expr)
+        {
+            return Parenthesize("group", expr.Expression);
+        }
 
-    public string VisitTryCatchStatement(TryCatchStatement stmt)
-    {
-        string tryBlock = stmt.TryBlock.Accept(this);
-        string catchParam = stmt.CatchParameter.Accept(this);
-        string catchBlock = stmt.CatchBlock.Accept(this);
-        string finallyBlock = stmt.FinallyBlock != null ? $" finally {stmt.FinallyBlock.Accept(this)}" : string.Empty;
-        return $"try {tryBlock} catch ({catchParam}) {catchBlock}{finallyBlock}";
-    }
+        public string VisitVariableExpression(VariableExpression expr)
+        {
+            return expr.Name.Lexeme;
+        }
 
-    public string VisitSwitchStatement(SwitchStatement stmt)
-    {
-        string expression = stmt.Expression.Accept(this);
-        string cases = string.Join("\n", stmt.Cases.ConvertAll(caseStmt => caseStmt.Accept(this)));
-        string defaultCase = stmt.DefaultCase != null ? $"default: {stmt.DefaultCase.Accept(this)}" : string.Empty;
-        return $"switch ({expression}) {{\n{cases}\n{defaultCase}\n}}";
-    }
+        public string VisitAssignmentExpression(AssignmentExpression expr)
+        {
+            return Parenthesize($"{expr.Name.Lexeme} =", expr.Value);
+        }
 
-    public string VisitCaseStatement(CaseStatement stmt)
-    {
-        string value = stmt.Value.Accept(this);
-        string body = stmt.Body.Accept(this);
-        return $"case {value}: {body}";
-    }
+        public string VisitCallExpression(CallExpression expr)
+        {
+            var args = string.Join(", ", expr.Arguments.ConvertAll(arg => arg.Accept(this)));
+            return $"{expr.Callee.Accept(this)}({args})";
+        }
 
-    public string VisitBreakStatement(BreakStatement stmt)
-    {
-        return "break;";
-    }
+        public string VisitVariableDeclaration(VariableDeclaration stmt)
+        {
+            var initializer = stmt.Initializer != null ? " = " + stmt.Initializer.Accept(this) : "";
+            return $"{stmt.Type.Lexeme} {stmt.Name.Lexeme}{initializer};";
+        }
 
-    public string VisitContinueStatement(ContinueStatement stmt)
-    {
-        return "continue;";
+        public string VisitFunctionDeclaration(FunctionDeclaration stmt)
+        {
+            var parameters = string.Join(", ", stmt.Parameters.ConvertAll(param => param.Name.Lexeme));
+            var body = stmt.Body.Accept(this);
+
+            // Si la función tiene un subnodo optimizado, lo añadimos al AST impreso
+            var optimizedFunction = optimizedAST.GetOptimizedFunction(stmt.Name.Lexeme);
+            if (optimizedFunction != null)
+            {
+                return $"fun {stmt.Name.Lexeme}({parameters}) Optimized {{ {body} }}";
+            }
+
+            return $"fun {stmt.Name.Lexeme}({parameters}) {{ {body} }}";
+        }
+
+        public string VisitExpressionStatement(ExpressionStatement stmt)
+        {
+            return stmt.Expression.Accept(this) + ";";
+        }
+
+        public string VisitIfStatement(IfStatement stmt)
+        {
+            var thenBranch = stmt.ThenBranch.Accept(this);
+            var elseBranch = stmt.ElseBranch != null ? " else " + stmt.ElseBranch.Accept(this) : "";
+            return $"if ({stmt.Condition.Accept(this)}) {thenBranch}{elseBranch}";
+        }
+
+        public string VisitWhileStatement(WhileStatement stmt)
+        {
+            return $"while ({stmt.Condition.Accept(this)}) {stmt.Body.Accept(this)}";
+        }
+
+        public string VisitForStatement(ForStatement stmt)
+        {
+            var initializer = stmt.Initializer.Accept(this);
+            var condition = stmt.Condition.Accept(this);
+            var increment = stmt.Increment.Accept(this);
+            return $"for ({initializer}; {condition}; {increment}) {stmt.Body.Accept(this)}";
+        }
+
+        public string VisitBlockStatement(BlockStatement stmt)
+        {
+            var statements = string.Join(" ", stmt.Statements.ConvertAll(s => s.Accept(this)));
+            return $"{{ {statements} }}";
+        }
+
+        public string VisitReturnStatement(ReturnStatement stmt)
+        {
+            var value = stmt.Value != null ? stmt.Value.Accept(this) : "";
+            return $"return {value};";
+        }
+
+        public string VisitArrayDeclaration(ArrayDeclaration stmt)
+        {
+            var size = stmt.Size.Accept(this);
+            var initializer = stmt.Initializer != null && stmt.Initializer.Count > 0
+                ? " = {" + string.Join(", ", stmt.Initializer.ConvertAll(i => i.Accept(this))) + "}"
+                : "";
+            return $"{stmt.Type.Lexeme}[] {stmt.Name.Lexeme}[{size}]{initializer};";
+        }
+
+        public string VisitArrayAccess(ArrayAccess expr)
+        {
+            return $"{expr.Array.Accept(this)}[{expr.Index.Accept(this)}]";
+        }
+
+        public string VisitArrayAssignmentExpression(ArrayAssignmentExpression expr)
+        {
+            return $"{expr.Array.Accept(this)}[{expr.Index.Accept(this)}] = {expr.Value.Accept(this)};";
+        }
+
+        public string VisitStructDeclaration(StructDeclaration stmt)
+        {
+            var fields = string.Join("; ", stmt.Fields.ConvertAll(f => $"{f.Type.Lexeme} {f.Name.Lexeme}"));
+            return $"struct {stmt.Name.Lexeme} {{ {fields} }}";
+        }
+
+        public string VisitEnumDeclaration(EnumDeclaration stmt)
+        {
+            var values = string.Join(", ", stmt.Values.ConvertAll(v => v.Lexeme));
+            return $"enum {stmt.Name.Lexeme} {{ {values} }}";
+        }
+
+        public string VisitTernaryExpression(TernaryExpression expr)
+        {
+            return $"({expr.Condition.Accept(this)} ? {expr.TrueExpr.Accept(this)} : {expr.FalseExpr.Accept(this)})";
+        }
+
+        public string VisitLambdaExpression(LambdaExpression expr)
+        {
+            var parameters = string.Join(", ", expr.Parameters.ConvertAll(p => p.Name.Lexeme));
+            return $"lambda ({parameters}) {expr.Body.Accept(this)}";
+        }
+
+        public string VisitImportStatement(ImportStatement stmt)
+        {
+            return $"import {stmt.Module.Lexeme};";
+        }
+
+        public string VisitTryCatchStatement(TryCatchStatement stmt)
+        {
+            var tryBlock = stmt.TryBlock.Accept(this);
+            var catchBlock = stmt.CatchBlock.Accept(this);
+            var finallyBlock = stmt.FinallyBlock != null ? " finally " + stmt.FinallyBlock.Accept(this) : "";
+            return $"try {tryBlock} catch ({stmt.CatchParameter.Name.Lexeme}) {catchBlock}{finallyBlock}";
+        }
+
+        public string VisitThrowStatement(ThrowStatement stmt)
+        {
+            return $"throw {stmt.Expression.Accept(this)};";
+        }
+
+        public string VisitLogicalExpression(LogicalExpression expr)
+        {
+            return Parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right);
+        }
+
+        public string VisitSwitchStatement(SwitchStatement stmt)
+        {
+            var cases = string.Join(" ", stmt.Cases.ConvertAll(c => c.Accept(this)));
+            var defaultCase = stmt.DefaultCase != null ? " default: " + stmt.DefaultCase.Accept(this) : "";
+            return $"switch ({stmt.Expression.Accept(this)}) {{ {cases}{defaultCase} }}";
+        }
+
+        public string VisitCaseStatement(CaseStatement stmt)
+        {
+            return $"case {stmt.Value.Accept(this)}: {stmt.Body.Accept(this)}";
+        }
+
+        public string VisitBreakStatement(BreakStatement stmt)
+        {
+            return "break;";
+        }
+
+        public string VisitContinueStatement(ContinueStatement stmt)
+        {
+            return "continue;";
+        }
+
+        private string Parenthesize(string name, params ASTNode[] nodes)
+        {
+            var builder = new StringBuilder();
+
+            builder.Append("(").Append(name);
+            foreach (var node in nodes)
+            {
+                if (node != null)
+                {
+                    builder.Append(" ");
+                    builder.Append(node.Accept(this));
+                }
+            }
+            builder.Append(")");
+
+            return builder.ToString();
+        }
     }
-}

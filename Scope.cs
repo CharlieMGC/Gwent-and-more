@@ -3,96 +3,76 @@ using System.Collections.Generic;
 
 public class Scope
 {
-    private readonly Dictionary<string, ScopeVariable> variables;
-    private readonly Scope? parentScope;
+    private Dictionary<string, object?> variables = new Dictionary<string, object?>();
+    public Scope? Parent { get; }
 
-    public Scope(Scope? parentScope = null)
+    private OptimizedAST optimizedAST;
+
+    public Scope(Scope? parent = null, OptimizedAST? optimizedAST = null)
     {
-        this.parentScope = parentScope;
-        this.variables = new Dictionary<string, ScopeVariable>(StringComparer.OrdinalIgnoreCase);
+        Parent = parent;
+        this.optimizedAST = optimizedAST ?? new OptimizedAST();
     }
 
-    // Estructura para almacenar información de la variable
-    private class ScopeVariable
+    public void Define(string name, object? value)
     {
-        public object? Value { get; set; }
-        public bool IsParameter { get; set; }
-    }
-
-    // Define una nueva variable en el ámbito actual
-    public void Define(string name, object? value, bool isParameter = false)
-    {
-        variables[name] = new ScopeVariable { Value = value, IsParameter = isParameter };
-    }
-
-    // Obtiene el valor de una variable, buscando en los ámbitos actuales y superiores
-    public object? Get(string name)
-    {
-        if (variables.TryGetValue(name, out var variable))
+        if (variables.ContainsKey(name))
         {
-            return variable.Value;
+            throw new Exception($"Error: La variable '{name}' ya está definida en el scope actual.");
         }
-        if (parentScope != null)
-        {
-            return parentScope.Get(name);
-        }
-        throw new KeyNotFoundException($"Variable '{name}' is not defined.");
+        variables[name] = value;
     }
 
-    // Asigna un valor a una variable, buscando en los ámbitos actuales y superiores
-    public void Assign(string name, object value)
+    public void Assign(string name, object? value)
     {
-        if (variables.TryGetValue(name, out var variable))
+        if (variables.ContainsKey(name))
         {
-            variable.Value = value;
+            variables[name] = value;
         }
-        else if (parentScope != null)
+        else if (Parent != null)
         {
-            parentScope.Assign(name, value);
+            Parent.Assign(name, value);
         }
         else
         {
-            throw new KeyNotFoundException($"Variable '{name}' is not defined.");
+            throw new Exception($"Error: La variable '{name}' no está definida.");
         }
     }
 
-    // Verifica si una variable está definida en los ámbitos actuales o superiores
+    public object? Get(string name)
+    {
+        if (variables.ContainsKey(name))
+        {
+            return variables[name];
+        }
+        else if (Parent != null)
+        {
+            return Parent.Get(name);
+        }
+        throw new Exception($"Error: La variable '{name}' no está definida.");
+    }
+
     public bool IsDefined(string name)
     {
-        return variables.ContainsKey(name) || (parentScope?.IsDefined(name) ?? false);
+        return variables.ContainsKey(name) || (Parent != null && Parent.IsDefined(name));
     }
 
-    // Intenta obtener el valor de una variable, devolviendo false si no se encuentra
-    public bool TryGet(string name, out object? value)
-    {
-        if (variables.TryGetValue(name, out var variable))
-        {
-            value = variable.Value;
-            return true;
-        }
-        if (parentScope != null)
-        {
-            return parentScope.TryGet(name, out value);
-        }
-        value = null;
-        return false;
-    }
-
-    // Crea un nuevo ámbito hijo
     public Scope CreateChildScope()
     {
-        return new Scope(this);
+        return new Scope(this, optimizedAST);
     }
 
-    // Método para definir parámetros de función
-    public void DefineParameter(string name, object? value)
+    public object? GetOptimizedFunction(string name)
     {
-        Define(name, value, true);
-    }
-
-    // Método para verificar si una variable es un parámetro
-    public bool IsParameter(string name)
-    {
-        return variables.TryGetValue(name, out var variable) && variable.IsParameter;
+        var optimizedFunction = optimizedAST.GetOptimizedFunction(name);
+        if (optimizedFunction != null)
+        {
+            return optimizedFunction;
+        }
+        else if (Parent != null)
+        {
+            return Parent.GetOptimizedFunction(name);
+        }
+        throw new Exception($"Error: La función '{name}' no está definida o no está optimizada.");
     }
 }

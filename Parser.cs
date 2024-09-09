@@ -21,12 +21,13 @@ public class Parser
         return statements;
     }
 
-    private ASTNode Declaration()
+    private ASTNode? Declaration()
     {
         try
         {
             if (Match(TokenType.FUN)) return FunctionDeclaration();
             if (Match(TokenType.TYPE)) return VariableDeclaration();
+            if (Match(TokenType.CLASS)) return ClassDeclaration(); // Detectar declaración de clase
             return Statement();
         }
         catch (ParserException)
@@ -36,7 +37,65 @@ public class Parser
         }
     }
 
-    private ASTNode FunctionDeclaration()
+    private ASTNode ClassDeclaration()
+{
+    // Captura el nombre de la clase
+    Token className = Consume(TokenType.ID, "Expected class name.");
+    
+    // Cambiar el tipo de parentClass de 'string?' a 'Token?'
+    Token? parentClass = null;
+
+    // Verifica si la clase extiende de otra clase
+    if (Match(TokenType.EXTENDS))
+    {
+        // En lugar de capturar solo el nombre (Lexeme), captura el Token completo
+        parentClass = Consume(TokenType.ID, "Expected parent class name.");
+    }
+
+    // Variable para capturar la visibilidad de la clase
+    TokenType? visibility = null;
+
+    // Verifica si hay un modificador de visibilidad como 'public', 'private', o 'protected'
+    if (Match(TokenType.PUBLIC, TokenType.PRIVATE, TokenType.PROTECTED))
+    {
+        visibility = Previous().Type;  // Guarda el tipo de visibilidad (public, private, protected)
+    }
+
+    // Espera la apertura del cuerpo de la clase
+    Consume(TokenType.LBRACE, "Expected '{' before class body.");
+
+    // Captura los miembros de la clase (atributos, métodos, etc.)
+    List<ASTNode> members = new List<ASTNode>();
+    while (!Check(TokenType.RBRACE) && !IsAtEnd())
+    {
+        members.Add(ClassMember());
+    }
+
+    // Espera el cierre del cuerpo de la clase
+    Consume(TokenType.RBRACE, "Expected '}' after class body.");
+
+    // Crea una instancia de ClassDeclaration y pasa el argumento 'visibility' y 'parentClass' como Token?
+    return new ClassDeclaration(className, parentClass, members, visibility);
+}
+
+
+    private ASTNode ClassMember()
+    {
+        TokenType? visibility = null;
+        if (Match(TokenType.PUBLIC, TokenType.PRIVATE, TokenType.PROTECTED))
+        {
+            visibility = Previous().Type;
+        }
+
+        if (Match(TokenType.FUN))
+        {
+            return FunctionDeclaration(visibility);
+        }
+
+        return VariableDeclaration(visibility);
+    }
+
+    private ASTNode FunctionDeclaration(TokenType? visibility = null)
     {
         Token name = Consume(TokenType.ID, "Expected function name.");
         Consume(TokenType.LPAREN, "Expected '(' after function name.");
@@ -51,14 +110,15 @@ public class Parser
                 parameters.Add(new VariableDeclaration(paramType, paramName, null));
             } while (Match(TokenType.COMMA));
         }
+
         Consume(TokenType.RPAREN, "Expected ')' after parameters.");
         Consume(TokenType.LBRACE, "Expected '{' before function body.");
 
         BlockStatement body = Block();
-        return new FunctionDeclaration(name, parameters, body);
+        return new FunctionDeclaration(name, parameters, body, visibility);
     }
 
-    private VariableDeclaration VariableDeclaration()
+    private VariableDeclaration VariableDeclaration(TokenType? visibility = null)
     {
         Token type = Previous();
         Token name = Consume(TokenType.ID, "Expected variable name.");
@@ -70,7 +130,7 @@ public class Parser
         }
 
         Consume(TokenType.SEMICOLON, "Expected ';' after variable declaration.");
-        return new VariableDeclaration(type, name, initializer);
+        return new VariableDeclaration(type, name, initializer, visibility);
     }
 
     private ASTNode Statement()
@@ -89,8 +149,8 @@ public class Parser
         ASTNode condition = Expression();
         Consume(TokenType.RPAREN, "Expected ')' after if condition.");
 
-        ASTNode thenBranch = Statement();
-        ASTNode elseBranch = null;
+        ASTNode? thenBranch = Statement();
+        ASTNode? elseBranch = null;
         if (Match(TokenType.ELSE))
         {
             elseBranch = Statement();

@@ -35,7 +35,7 @@ public enum TokenType
 
     // Palabras clave
     IF, ELSE, WHILE, FOR, RETURN, FUN, TYPE, STRUCT, ENUM, IMPORT, TRY, CATCH, FINALLY, THROW,
-    BREAK, CONTINUE, SWITCH, CASE, DEFAULT,
+    BREAK, CONTINUE, SWITCH, CASE, DEFAULT, CLASS, EXTENDS, PUBLIC, PRIVATE, PROTECTED,
 
     // Otros
     EOF
@@ -66,7 +66,7 @@ public class Token
 
     public override int GetHashCode() => HashCode.Combine(Type, Lexeme, Literal, Line, Column);
 
-    // Improvement: Adding method to get more detailed error information
+    // Método para obtener más información detallada sobre errores
     public static string GetDetailedErrorInfo(Token token, string message)
     {
         return $"Error at line {token.Line}, column {token.Column}: {message}. Token: {token.Lexeme}";

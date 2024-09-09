@@ -19,7 +19,9 @@ public static class Lexer
         { "false", TokenType.FALSE }, { "null", TokenType.NULL }, { "break", TokenType.BREAK }, { "continue", TokenType.CONTINUE },
         { "switch", TokenType.SWITCH }, { "case", TokenType.CASE }, { "default", TokenType.DEFAULT }, { "fun", TokenType.FUN },
         { "struct", TokenType.STRUCT }, { "enum", TokenType.ENUM }, { "import", TokenType.IMPORT }, { "try", TokenType.TRY },
-        { "catch", TokenType.CATCH }, { "finally", TokenType.FINALLY }, { "throw", TokenType.THROW }
+        { "catch", TokenType.CATCH }, { "finally", TokenType.FINALLY }, { "throw", TokenType.THROW },
+        { "class", TokenType.CLASS }, { "extends", TokenType.EXTENDS }, { "public", TokenType.PUBLIC },
+        { "private", TokenType.PRIVATE }, { "protected", TokenType.PROTECTED }
     };
 
     private static readonly Dictionary<string, TokenType> multiCharTokens = new Dictionary<string, TokenType>
@@ -27,9 +29,10 @@ public static class Lexer
         { "==", TokenType.EQUAL }, { "!=", TokenType.NOT_EQUAL }, { "<=", TokenType.LESS_EQUAL }, { ">=", TokenType.GREATER_EQUAL },
         { "&&", TokenType.AND }, { "||", TokenType.OR }, { "+=", TokenType.PLUS_ASSIGN }, { "-=", TokenType.MINUS_ASSIGN },
         { "*=", TokenType.TIMES_ASSIGN }, { "/=", TokenType.DIVIDE_ASSIGN }, { "%=", TokenType.MODULO_ASSIGN },
-        { "&=", TokenType.AND_ASSIGN }, { "|=", TokenType.OR_ASSIGN }, { "^=", TokenType.XOR_ASSIGN }, { "<<=", TokenType.SHIFT_LEFT_ASSIGN },
-        { ">>=", TokenType.SHIFT_RIGHT_ASSIGN }, { "++", TokenType.INCREMENT }, { "--", TokenType.DECREMENT },
-        { "<<", TokenType.SHIFT_LEFT }, { ">>", TokenType.SHIFT_RIGHT }, { "->", TokenType.ARROW }
+        { "&=", TokenType.AND_ASSIGN }, { "|=", TokenType.OR_ASSIGN }, { "^=", TokenType.XOR_ASSIGN },
+        { "<<=", TokenType.SHIFT_LEFT_ASSIGN }, { ">>=", TokenType.SHIFT_RIGHT_ASSIGN },
+        { "++", TokenType.INCREMENT }, { "--", TokenType.DECREMENT }, { "<<", TokenType.SHIFT_LEFT },
+        { ">>", TokenType.SHIFT_RIGHT }, { "->", TokenType.ARROW }
     };
 
     public static List<Token> Tokenize(string text)
@@ -46,20 +49,37 @@ public static class Lexer
             switch (state)
             {
                 case State.Start:
-                    if (char.IsWhiteSpace(c)) HandleWhitespace(ref i, ref line, ref column, c);
-                    else if (char.IsLetter(c) || c == '_') StartIdentifier(ref state, ref currentToken, c, ref i); // Ajuste en la duplicación de caracteres
-                    else if (char.IsDigit(c)) StartNumber(ref state, ref currentToken, c);
-                    else if (c == '"') StartString(ref state, ref currentToken);
-                    else if (c == '\'') StartCharacter(ref state, ref currentToken);
-                    else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '/') // Comentario de una línea
+                    if (char.IsWhiteSpace(c))
+                    {
+                        HandleWhitespace(ref i, ref line, ref column, c);
+                    }
+                    else if (char.IsLetter(c) || c == '_')
+                    {
+                        StartIdentifier(ref state, ref currentToken, c, ref i, ref column);
+                    }
+                    else if (char.IsDigit(c))
+                    {
+                        StartNumber(ref state, ref currentToken, c, ref i, ref column);
+                    }
+                    else if (c == '"')
+                    {
+                        StartString(ref state, ref i, ref column);
+                    }
+                    else if (c == '\'')
+                    {
+                        StartCharacter(ref state, ref i, ref column);
+                    }
+                    else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '/')
                     {
                         state = State.SingleLineComment;
                         i += 2;
+                        column += 2;
                     }
-                    else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '*') // Comentario de varias líneas
+                    else if (c == '/' && i + 1 < buffer.Length && buffer[i + 1] == '*')
                     {
                         state = State.MultiLineComment;
                         i += 2;
+                        column += 2;
                     }
                     else if (i + 1 < buffer.Length && multiCharTokens.ContainsKey($"{c}{buffer[i + 1]}"))
                     {
@@ -69,27 +89,29 @@ public static class Lexer
                     }
                     else
                     {
-                        tokens.Add(HandleSingleCharToken(c, ref column, ref i, tokens));
+                        tokens.Add(HandleSingleCharToken(c, line, column));
+                        i++;
+                        column++;
                     }
                     break;
 
                 case State.Number:
-                    HandleNumber(ref state, ref currentToken, ref tokens, ref column, ref i, buffer, c);
+                    HandleNumber(ref state, ref currentToken, ref tokens, ref line, ref column, ref i, buffer, c);
                     break;
 
                 case State.Identifier:
-                    HandleIdentifier(ref state, ref currentToken, ref tokens, ref column, ref i, buffer, c);
+                    HandleIdentifier(ref state, ref currentToken, ref tokens, ref line, ref column, ref i, buffer, c);
                     break;
 
                 case State.String:
-                    HandleString(ref state, ref currentToken, ref tokens, ref column, ref i, buffer, c);
+                    HandleString(ref state, ref currentToken, ref tokens, ref line, ref column, ref i, buffer, c);
                     break;
 
                 case State.Character:
-                    HandleCharacter(ref state, ref currentToken, ref tokens, ref column, ref i, buffer, c);
+                    HandleCharacter(ref state, ref currentToken, ref tokens, ref line, ref column, ref i, buffer, c);
                     break;
 
-                case State.SingleLineComment: // Ignorar comentarios de una sola línea
+                case State.SingleLineComment:
                     if (c == '\n')
                     {
                         state = State.Start;
@@ -99,7 +121,7 @@ public static class Lexer
                     i++;
                     break;
 
-                case State.MultiLineComment: // Ignorar comentarios de varias líneas
+                case State.MultiLineComment:
                     if (c == '*' && i + 1 < buffer.Length && buffer[i + 1] == '/')
                     {
                         state = State.Start;
@@ -113,10 +135,19 @@ public static class Lexer
                             line++;
                             column = 1;
                         }
+                        else
+                        {
+                            column++;
+                        }
                         i++;
                     }
                     break;
             }
+        }
+
+        if (state == State.Number || state == State.Identifier)
+        {
+            AddFinalToken(ref tokens, state, currentToken, line, column);
         }
 
         tokens.Add(new Token(TokenType.EOF, "", null, line, column));
@@ -137,30 +168,37 @@ public static class Lexer
         i++;
     }
 
-    private static void StartIdentifier(ref State state, ref StringBuilder currentToken, char c, ref int i)
+    private static void StartIdentifier(ref State state, ref StringBuilder currentToken, char c, ref int i, ref int column)
     {
         state = State.Identifier;
         currentToken.Append(c);
-        i++; // Avanzar el índice aquí para evitar duplicar la primera letra
+        i++;
+        column++;
     }
 
-    private static void StartNumber(ref State state, ref StringBuilder currentToken, char c)
+    private static void StartNumber(ref State state, ref StringBuilder currentToken, char c, ref int i, ref int column)
     {
         state = State.Number;
         currentToken.Append(c);
+        i++;
+        column++;
     }
 
-    private static void StartString(ref State state, ref StringBuilder currentToken)
+    private static void StartString(ref State state, ref int i, ref int column)
     {
         state = State.String;
+        i++;
+        column++;
     }
 
-    private static void StartCharacter(ref State state, ref StringBuilder currentToken)
+    private static void StartCharacter(ref State state, ref int i, ref int column)
     {
         state = State.Character;
+        i++;
+        column++;
     }
 
-    private static Token HandleSingleCharToken(char c, ref int column, ref int i, List<Token> tokens)
+    private static Token HandleSingleCharToken(char c, int line, int column)
     {
         TokenType type = c switch
         {
@@ -193,73 +231,112 @@ public static class Lexer
             '`' => TokenType.BACKTICK,
             _ => throw new LexerException($"Unexpected character: {c}")
         };
-        column++;
-        i++;
-        return new Token(type, c.ToString(), null, 1, column);
+        return new Token(type, c.ToString(), null, line, column);
     }
 
-    private static void HandleNumber(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int column, ref int i, char[] buffer, char c)
+    private static void HandleNumber(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int line, ref int column, ref int i, char[] buffer, char c)
     {
         if (char.IsDigit(c))
         {
             currentToken.Append(c);
+            i++;
+            column++;
         }
         else
         {
-            tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), 1, column));
-            state = State.Start;
-            currentToken.Clear();
+            if (currentToken.Length > 0)
+            {
+                tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line, column - currentToken.Length));
+                state = State.Start;
+                currentToken.Clear();
+            }
         }
-        i++;
-        column++;
     }
-
-    private static void HandleIdentifier(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int column, ref int i, char[] buffer, char c)
+    private static void HandleIdentifier(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int line, ref int column, ref int i, char[] buffer, char c)
     {
-        if (char.IsLetterOrDigit(c))
+        if (char.IsLetterOrDigit(c) || c == '_')
         {
             currentToken.Append(c);
+            i++;
+            column++;
         }
         else
         {
             string identifier = currentToken.ToString();
-            tokens.Add(new Token(keywords.TryGetValue(identifier, out var keywordType) ? keywordType : TokenType.ID, identifier, null, 1, column));
+            if (keywords.TryGetValue(identifier, out TokenType keywordType))
+            {
+                tokens.Add(new Token(keywordType, identifier, null, line, column - identifier.Length));
+            }
+            else
+            {
+                tokens.Add(new Token(TokenType.ID, identifier, null, line, column - identifier.Length));
+            }
             state = State.Start;
             currentToken.Clear();
+            // No incrementamos i aquí para que el próximo carácter se procese en el siguiente ciclo
         }
-        i++;
-        column++;
     }
-
-    private static void HandleString(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int column, ref int i, char[] buffer, char c)
+    private static void HandleString(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int line, ref int column, ref int i, char[] buffer, char c)
     {
         if (c == '"' && buffer[i - 1] != '\\')
         {
-            tokens.Add(new Token(TokenType.STRING, currentToken.ToString(), currentToken.ToString(), 1, column));
+            tokens.Add(new Token(TokenType.STRING, currentToken.ToString(), currentToken.ToString(), line, column - currentToken.Length - 1));
             state = State.Start;
             currentToken.Clear();
+            i++;
+            column++;
         }
         else
         {
             currentToken.Append(c);
+            if (c == '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+            i++;
         }
-        i++;
-        column++;
     }
 
-    private static void HandleCharacter(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int column, ref int i, char[] buffer, char c)
+    private static void HandleCharacter(ref State state, ref StringBuilder currentToken, ref List<Token> tokens, ref int line, ref int column, ref int i, char[] buffer, char c)
     {
         if (c == '\'' && buffer[i - 1] != '\\')
         {
-            tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString(), currentToken.ToString(), 1, column));
+            tokens.Add(new Token(TokenType.CHARACTER, currentToken.ToString(), currentToken.ToString(), line, column - currentToken.Length - 1));
             state = State.Start;
             currentToken.Clear();
+            i++;
+            column++;
         }
         else
         {
             currentToken.Append(c);
+            i++;
+            column++;
         }
-        i++;
-        column++;
+    }
+
+    private static void AddFinalToken(ref List<Token> tokens, State state, StringBuilder currentToken, int line, int column)
+    {
+        if (state == State.Number)
+        {
+            tokens.Add(new Token(TokenType.NUMBER, currentToken.ToString(), int.Parse(currentToken.ToString()), line, column - currentToken.Length));
+        }
+        else if (state == State.Identifier)
+        {
+            string identifier = currentToken.ToString();
+            if (keywords.TryGetValue(identifier, out TokenType keywordType))
+            {
+                tokens.Add(new Token(keywordType, identifier, null, line, column - identifier.Length));
+            }
+            else
+            {
+                tokens.Add(new Token(TokenType.ID, identifier, null, line, column - identifier.Length));
+            }
+        }
     }
 }

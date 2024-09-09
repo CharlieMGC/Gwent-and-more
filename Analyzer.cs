@@ -170,8 +170,6 @@ public class SemanticAnalyzer : IVisitor<object?>
         return result;
     }
 
-
-
     public object? VisitFunctionDeclaration(FunctionDeclaration stmt)
     {
         var functionScope = currentScope.CreateChildScope();
@@ -189,6 +187,51 @@ public class SemanticAnalyzer : IVisitor<object?>
         currentScope = currentScope.Parent;
 
         return null;
+    }
+
+    // Soporte para declaración de clases
+    public object? VisitClassDeclaration(ClassDeclaration stmt)
+    {
+        // Verificar si la clase tiene una clase padre
+        if (stmt.ParentClass != null)
+        {
+            if (!currentScope.IsDefined(stmt.ParentClass.Lexeme))
+            {
+                throw new Exception($"Error: Clase base '{stmt.ParentClass.Lexeme}' no está definida.");
+            }
+        }
+
+        // Definir la clase en el scope actual
+        currentScope.Define(stmt.Name.Lexeme, stmt);
+
+        // Crear un nuevo scope para los miembros de la clase
+        var classScope = currentScope.CreateChildScope();
+        currentScope = classScope;
+
+        foreach (var member in stmt.Members)
+        {
+            member.Accept(this);
+        }
+
+        currentScope = currentScope.Parent;
+
+        return null;
+    }
+    public object? VisitClassMemberDeclaration(ClassMemberDeclaration stmt)
+    {
+        // Si el miembro es una función, lo analiza como una declaración de función.
+        if (stmt.Member is FunctionDeclaration function)
+        {
+            return VisitFunctionDeclaration(function);
+        }
+        // Si el miembro es una variable, lo analiza como una declaración de variable.
+        else if (stmt.Member is VariableDeclaration variable)
+        {
+            return VisitVariableDeclaration(variable);
+        }
+
+        // Si el tipo de miembro no es soportado, se lanza una excepción.
+        throw new Exception("Error: Miembro de clase no soportado.");
     }
 
     public object? VisitVariableDeclaration(VariableDeclaration stmt)
@@ -237,6 +280,7 @@ public class SemanticAnalyzer : IVisitor<object?>
         }
         return null;
     }
+
     public object? VisitForStatement(ForStatement stmt)
     {
         stmt.Initializer.Accept(this);

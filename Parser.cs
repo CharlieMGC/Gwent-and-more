@@ -20,18 +20,28 @@ public class Parser
         this.tokens = tokens;
     }
 
-    public List<ASTNode> Parse()
+    public ProgramNode Parse()
     {
+        List<FunctionDeclaration> functionDeclarations = new List<FunctionDeclaration>();
         List<ASTNode> statements = new List<ASTNode>();
+
         while (!IsAtEnd())
         {
+            // Intentamos obtener una declaración de función o cualquier otra declaración.
             ASTNode? declaration = Declaration();
-            if (declaration != null)
+
+            if (declaration is FunctionDeclaration functionDeclaration)
             {
-                statements.Add(declaration);
+                functionDeclarations.Add(functionDeclaration); // Si es una función, la añadimos a la lista de funciones.
+            }
+            else if (declaration != null)
+            {
+                statements.Add(declaration); // Si es cualquier otra cosa, la añadimos a las declaraciones globales.
             }
         }
-        return statements;
+
+        // Creamos el nodo raíz ProgramNode con las funciones y declaraciones.
+        return new ProgramNode(functionDeclarations, statements);
     }
 
     private ASTNode? Declaration()
@@ -54,77 +64,71 @@ public class Parser
             return null;
         }
     }
-
     private ASTNode VariableDeclaration()
     {
-        Token type = Previous();
-        Token name = Consume(TokenType.ID, "Expect variable name.");
+        Token type;
+
+        // Verificar si la declaración es con "var" (tipo inferido) o tipo explícito
+        if (Match(TokenType.VAR)) // Manejar el caso en el que el tipo es inferido con "var"
+        {
+            type = new Token(TokenType.VAR, "var", null, Previous().Line, Previous().Column);
+        }
+        else
+        {
+            type = Consume(TokenType.TYPE, "Expect type or 'var'."); // Consumir el tipo explícito
+        }
+
+        Token name = Consume(TokenType.ID, "Expect variable name."); // Consumir el nombre de la variable
         Console.WriteLine($"Parsing VariableDeclaration: Type = {type.Lexeme}, Name = {name.Lexeme}");
 
         ASTNode? initializer = null;
+
+        // Si existe un valor de inicialización, analizarlo
         if (Match(TokenType.ASSIGN))
         {
             Console.WriteLine("Parsing VariableDeclaration: Found assignment operator.");
-            initializer = Expression();
-        }
-        else if (Match(TokenType.LBRACKET))
-        {
-            Console.WriteLine("Parsing VariableDeclaration: Found array declaration.");
-            ASTNode size = Expression();
-            Consume(TokenType.RBRACKET, "Expect ']' after array size.");
-            if (Match(TokenType.ASSIGN))
-            {
-                Console.WriteLine("Parsing VariableDeclaration: Found array initializer.");
-                List<ASTNode> elements = new List<ASTNode>();
-                if (Match(TokenType.LBRACE))
-                {
-                    if (!Check(TokenType.RBRACE))
-                    {
-                        do
-                        {
-                            elements.Add(Expression());
-                        } while (Match(TokenType.COMMA));
-                    }
-                    Consume(TokenType.RBRACE, "Expect '}' after array initializer.");
-                }
-                initializer = new ArrayDeclaration(type, name, size, elements);
-            }
-            else
-            {
-                initializer = new ArrayDeclaration(type, name, size, new List<ASTNode>());
-            }
+            initializer = Expression(); // Obtener el valor asignado
         }
 
+        // Asegurarse de que la declaración termine con un punto y coma
         Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
         Console.WriteLine($"Completed VariableDeclaration for {name.Lexeme}");
+
+        // Devolver el nodo de declaración de variable con su tipo, nombre y valor inicial (si existe)
         return new VariableDeclaration(type, name, initializer ?? new LiteralExpression(null));
     }
 
-    private ASTNode FunctionDeclaration()
-{
-    Token name = Consume(TokenType.ID, "Expect function name.");
-    Consume(TokenType.LPAREN, "Expect '(' after function name.");
-    List<VariableDeclaration> parameters = new List<VariableDeclaration>();
-    if (!Check(TokenType.RPAREN))
+
+    private FunctionDeclaration FunctionDeclaration()
     {
-        do
+        Token name = Consume(TokenType.ID, "Expect function name.");
+        Console.WriteLine($"Parsing function: {name.Lexeme}"); // Depuració
+        Consume(TokenType.LPAREN, "Expect '(' after function name.");
+        List<VariableDeclaration> parameters = new List<VariableDeclaration>();
+
+        if (!Check(TokenType.RPAREN))
         {
-            if (parameters.Count >= 255)
+            do
             {
-                Error(Peek(), "Can't have more than 255 parameters.");
-            }
+                if (parameters.Count >= 255)
+                {
+                    Error(Peek(), "Can't have more than 255 parameters.");
+                }
 
-            Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
-            Token paramName = Consume(TokenType.ID, "Expect parameter name.");
-            parameters.Add(new VariableDeclaration(paramType, paramName, null));
-        } while (Match(TokenType.COMMA));
+                Token paramType = Consume(TokenType.TYPE, "Expect parameter type.");
+                Token paramName = Consume(TokenType.ID, "Expect parameter name.");
+                parameters.Add(new VariableDeclaration(paramType, paramName, null));
+            } while (Match(TokenType.COMMA));
+        }
+
+        Consume(TokenType.RPAREN, "Expect ')' after parameters.");
+
+        // Parse the function body
+        Consume(TokenType.LBRACE, "Expect '{' before function body.");
+        BlockStatement body = (BlockStatement)Block();
+
+        return new FunctionDeclaration(name, parameters, body);
     }
-    Consume(TokenType.RPAREN, "Expect ')' after parameters.");
-
-    Consume(TokenType.LBRACE, "Expect '{' before function body.");
-    BlockStatement body = (BlockStatement)Block();
-    return new FunctionDeclaration(name, parameters, body);
-}
 
     private ASTNode Statement()
     {
@@ -139,22 +143,17 @@ public class Parser
 
     private ASTNode IfStatement()
     {
-        Console.WriteLine("Parsing IfStatement");
         Consume(TokenType.LPAREN, "Expect '(' after 'if'.");
         ASTNode condition = Expression();
-        Console.WriteLine("IfStatement: Parsed condition");
         Consume(TokenType.RPAREN, "Expect ')' after if condition.");
 
-
         ASTNode thenBranch = Statement();
-        Console.WriteLine("IfStatement: Parsed then branch");
         ASTNode? elseBranch = null;
         if (Match(TokenType.ELSE))
         {
-            Console.WriteLine("IfStatement: Found else branch");
             elseBranch = Statement();
         }
-        Console.WriteLine("Completed IfStatement");
+
         return new IfStatement(condition, thenBranch, elseBranch ?? new BlockStatement(new List<ASTNode>()));
     }
 
@@ -239,7 +238,6 @@ public class Parser
 
     private ASTNode Block()
     {
-        Console.WriteLine("Parsing BlockStatement");
         List<ASTNode> statements = new List<ASTNode>();
 
         while (!Check(TokenType.RBRACE) && !IsAtEnd())
@@ -248,12 +246,10 @@ public class Parser
             if (declaration != null)
             {
                 statements.Add(declaration);
-                Console.WriteLine("BlockStatement: Added declaration");
             }
         }
 
         Consume(TokenType.RBRACE, "Expect '}' after block.");
-        Console.WriteLine("Completed BlockStatement");
         return new BlockStatement(statements);
     }
 
@@ -272,23 +268,18 @@ public class Parser
     private ASTNode Assignment()
     {
         ASTNode expr = LogicalOr();
-        Console.WriteLine("Assignment: Parsed left-hand expression");
 
         if (Match(TokenType.ASSIGN))
         {
             Token equals = Previous();
             ASTNode value = Expression();
-            Console.WriteLine("Assignment: Found assignment operator and right-hand expression");
 
             if (expr is VariableExpression ve)
             {
-                Token name = ve.Name;
-                Console.WriteLine($"Assignment: Variable {name.Lexeme}");
-                return new AssignmentExpression(name, value);
+                return new AssignmentExpression(ve.Name, value);
             }
             else if (expr is ArrayAccess aa)
             {
-                Console.WriteLine("Assignment: Array access assignment");
                 return new ArrayAssignmentExpression(aa.Array, aa.Index, value);
             }
 
@@ -420,16 +411,11 @@ public class Parser
         {
             do
             {
-                if (arguments.Count >= 255)
-                {
-                    Error(Peek(), "Can't have more than 255 arguments.");
-                }
                 arguments.Add(Expression());
             } while (Match(TokenType.COMMA));
         }
 
         Token paren = Consume(TokenType.RPAREN, "Expect ')' after arguments.");
-
         return new CallExpression(callee, paren, arguments);
     }
 
@@ -437,24 +423,9 @@ public class Parser
     {
         if (Match(TokenType.FALSE)) return new LiteralExpression(false);
         if (Match(TokenType.TRUE)) return new LiteralExpression(true);
-        if (Match(TokenType.NULL)) return new LiteralExpression(null);
-
-        if (Match(TokenType.NUMBER, TokenType.STRING))
-        {
-            return new LiteralExpression(Previous().Literal);
-        }
-
-        if (Match(TokenType.ID))
-        {
-            Token name = Previous();
-            if (Match(TokenType.LBRACKET))
-            {
-                ASTNode index = Expression();
-                Consume(TokenType.RBRACKET, "Expect ']' after array index.");
-                return new ArrayAccess(new VariableExpression(name), index);
-            }
-            return new VariableExpression(name);
-        }
+        if (Match(TokenType.NUMBER)) return new LiteralExpression(Previous().Literal);
+        if (Match(TokenType.STRING)) return new LiteralExpression(Previous().Literal);
+        if (Match(TokenType.ID)) return new VariableExpression(Previous());
 
         if (Match(TokenType.LPAREN))
         {
@@ -466,9 +437,10 @@ public class Parser
         throw Error(Peek(), "Expect expression.");
     }
 
+    // Helper methods for the parser (Match, Consume, etc.)
     private bool Match(params TokenType[] types)
     {
-        foreach (var type in types)
+        foreach (TokenType type in types)
         {
             if (Check(type))
             {
@@ -476,6 +448,7 @@ public class Parser
                 return true;
             }
         }
+
         return false;
     }
 
@@ -527,11 +500,12 @@ public class Parser
 
             switch (Peek().Type)
             {
-                case TokenType.TYPE:
+                case TokenType.CLASS:
                 case TokenType.FUN:
+                case TokenType.VAR:
+                case TokenType.FOR:
                 case TokenType.IF:
                 case TokenType.WHILE:
-                case TokenType.FOR:
                 case TokenType.RETURN:
                     return;
             }

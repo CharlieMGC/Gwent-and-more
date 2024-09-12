@@ -8,7 +8,7 @@ class Program
     static void Main()
     {
         string carpetaRuta = @"D:\Gwent-and-more\Pruebas";
-        
+
         string[] archivos = Directory.GetFiles(carpetaRuta, "*.txt");
 
         if (archivos.Length == 0)
@@ -47,10 +47,10 @@ class Program
 
             // Parsing
             var parser = new Parser(tokens);
-            List<ASTNode> ast;
+            ProgramNode programNode;
             try
             {
-                ast = parser.Parse().Where(node => node != null).ToList();
+                programNode = parser.Parse();
             }
             catch (ParserException ex)
             {
@@ -61,23 +61,16 @@ class Program
             // Imprimir el AST utilizando ASTPrinter
             Console.WriteLine("\nAST:");
             var printer = new ASTPrinter();
-            foreach (var node in ast)
-            {
-                string result = node.Accept(printer);
-                Console.WriteLine(result);
-                Console.WriteLine(); // Línea en blanco para separar nodos
-            }
-
+            string result = programNode.Accept(printer);
+            Console.WriteLine(result);
+            Console.WriteLine(); // Línea en blanco para separar nodos
 
             // Análisis Semántico
             Console.WriteLine("Iniciando análisis semántico...");
             var semanticAnalyzer = new SemanticAnalyzer();
             try
             {
-                foreach (var node in ast)
-                {
-                    node.Accept(semanticAnalyzer);
-                }
+                programNode.Accept(semanticAnalyzer);
                 Console.WriteLine("Análisis semántico completado exitosamente.");
             }
             catch (Exception ex)

@@ -4,6 +4,32 @@ using System.Text;
 
 public class ASTPrinter : IVisitor<string>
 {
+    public string VisitProgramNode(ProgramNode program)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("Program:");
+
+        builder.AppendLine("Functions:");
+        if (program.FunctionDeclarations.Count == 0)
+        {
+            builder.AppendLine("No functions found."); // Depuración
+        }
+
+        foreach (var function in program.FunctionDeclarations)
+        {
+            Console.WriteLine($"Imprimiendo función: {function.Name.Lexeme}"); // Depuración
+            builder.AppendLine(function.Accept(this));  // Llama a VisitFunctionDeclaration
+        }
+        // Imprimir las declaraciones restantes
+        builder.AppendLine("Statements:");
+        foreach (var statement in program.Statements)
+        {
+            builder.AppendLine(statement.Accept(this));
+        }
+
+        return builder.ToString();
+    }
+
     public string VisitBinaryExpression(BinaryExpression expr)
     {
         string left = expr.Left.Accept(this);
@@ -21,6 +47,7 @@ public class ASTPrinter : IVisitor<string>
     {
         return expr.Value?.ToString() ?? "null";
     }
+
     public string VisitGroupingExpression(GroupingExpression expr)
     {
         string expression = expr.Expression.Accept(this);
@@ -97,13 +124,14 @@ public class ASTPrinter : IVisitor<string>
         string? initializer = stmt.Initializer?.Accept(this);
         return $"{type} {name} = {initializer};";
     }
+
     public string VisitFunctionDeclaration(FunctionDeclaration stmt)
-{
-    string name = stmt.Name.Lexeme;
-    string parameters = string.Join(", ", stmt.Parameters.Select(param => $"{param.Type.Lexeme} {param.Name.Lexeme}"));
-    string body = stmt.Body.Accept(this);
-    return $"function {name}({parameters}) {body}";
-}
+    {
+        string name = stmt.Name.Lexeme;
+        string parameters = string.Join(", ", stmt.Parameters.Select(param => $"{param.Type.Lexeme} {param.Name.Lexeme}"));
+        string body = stmt.Body.Accept(this);
+        return $"function {name}({parameters}) {body}";
+    }
 
     public string VisitExpressionStatement(ExpressionStatement stmt)
     {

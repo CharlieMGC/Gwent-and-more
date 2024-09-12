@@ -5,6 +5,24 @@ public class SemanticAnalyzer : IVisitor<object?>
 {
     private Scope currentScope = new Scope(); // Inicialización del scope actual
     private Type? currentReturnType = null; // Para manejar el tipo de retorno de la función actual
+    private FunctionTable functionTable = new FunctionTable();  // Tabla global de funciones
+
+    public object? VisitProgramNode(ProgramNode program)
+    {
+        // Primero registrar las funciones en la tabla de funciones
+        foreach (var function in program.FunctionDeclarations)
+        {
+            function.Accept(this); // Esto llamará a VisitFunctionDeclaration para registrar las funciones
+        }
+
+        // Luego ejecutar el resto de las declaraciones
+        foreach (var statement in program.Statements)
+        {
+            statement.Accept(this);
+        }
+
+        return null;
+    }
 
     public object? VisitBinaryExpression(BinaryExpression expr)
     {
@@ -157,6 +175,7 @@ public class SemanticAnalyzer : IVisitor<object?>
 
     public object? VisitVariableExpression(VariableExpression expr)
     {
+        // Buscar el valor de la variable en el scope actual
         if (!currentScope.IsDefined(expr.Name.Lexeme))
         {
             throw new Exception($"Error: Variable '{expr.Name.Lexeme}' no está definida.");
@@ -166,85 +185,81 @@ public class SemanticAnalyzer : IVisitor<object?>
 
     public object? VisitAssignmentExpression(AssignmentExpression expr)
     {
-        var value = expr.Value.Accept(this);
+        var value = expr.Value.Accept(this);  // Evaluar el valor que estamos asignando
         if (!currentScope.IsDefined(expr.Name.Lexeme))
         {
-
             throw new Exception($"Error: Variable '{expr.Name.Lexeme}' no está definida.");
         }
         currentScope.Assign(expr.Name.Lexeme, value ?? throw new Exception("Error: Asignación de un valor nulo."));
         return value;
     }
+
     public object? VisitCallExpression(CallExpression expr)
     {
-        var callee = expr.Callee.Accept(this);
-        if (callee == null || !(callee is FunctionDeclaration function))
+        // Obtener el nombre de la función que está siendo llamada
+        var calleeName = expr.Callee.Accept(this)?.ToString();
+
+        if (calleeName == null)
         {
-            throw new Exception($"Error: Llamada a una función no definida o inválida.");
+            throw new Exception("Error: Llamada a una función no válida. El nombre de la función no puede ser null.");
         }
 
-        // Verificar que la cantidad de argumentos coincida
-        if (function.Parameters.Count != expr.Arguments.Count)
-        {
-            throw new Exception("Error: Número incorrecto de argumentos en la llamada a la función.");
-        }
+        // Buscar la función en la tabla de funciones
+        var function = functionTable.GetFunction(calleeName);
 
         // Crear un nuevo scope para la función
         var functionScope = currentScope.CreateChildScope();
-        var previousScope = currentScope;
-        currentScope = functionScope;
+        var previousScope = currentScope;  // Guardamos el scope actual para restaurarlo después
+        currentScope = functionScope;      // Cambiamos al nuevo scope de la función
 
-        // Verificar que los tipos de los argumentos coincidan con los tipos de los parámetros
+        // Verificar que la cantidad de argumentos coincida con la cantidad de parámetros
+        if (function.Parameters.Count != expr.Arguments.Count)
+        {
+            throw new Exception($"Error: La función '{calleeName}' esperaba {function.Parameters.Count} argumentos, pero recibió {expr.Arguments.Count}.");
+        }
+
+        // Asignar los valores de los argumentos a los parámetros
         for (int i = 0; i < expr.Arguments.Count; i++)
         {
-            var argumentValue = expr.Arguments[i].Accept(this);
+            var argumentValue = expr.Arguments[i].Accept(this);  // Evaluar el argumento
             var param = function.Parameters[i];
-
-            // Definir el parámetro con el valor del argumento en el nuevo scope
-            currentScope.Define(param.Name.Lexeme, argumentValue);
+            currentScope.Define(param.Name.Lexeme, argumentValue);  // Definir el parámetro en el nuevo scope
         }
 
         // Ejecutar el cuerpo de la función
-        function.Body.Accept(this);
+        object? returnValue = null;
+        try
+        {
+            returnValue = function.Body.Accept(this);  // Ejecutar el cuerpo de la función
+        }
+        finally
+        {
+            // Restaurar el scope anterior después de ejecutar la función
+            currentScope = previousScope;
+        }
 
-        // Restaurar el scope anterior
-        currentScope = previousScope;
-
-        return null;
+        return returnValue;
     }
 
     public object? VisitFunctionDeclaration(FunctionDeclaration stmt)
-{
-    var functionScope = currentScope.CreateChildScope();
-    var previousScope = currentScope;
-    currentScope = functionScope;
-
-    // Definir los parámetros en el scope de la función
-    foreach (var param in stmt.Parameters)
     {
-        currentScope.DefineParameter(param.Name.Lexeme, null);
+        // Registrar la función en la tabla de funciones
+        functionTable.DefineFunction(stmt.Name.Lexeme, stmt);
+
+        // No ejecutamos el cuerpo de la función inmediatamente, solo la registramos
+        return null;
     }
-
-    // Procesar el cuerpo de la función
-    stmt.Body.Accept(this);
-
-    // Restaurar el scope anterior
-    currentScope = previousScope;
-
-    return null;
-}
-
 
     public object? VisitVariableDeclaration(VariableDeclaration stmt)
     {
-        var initializer = stmt.Initializer?.Accept(this);
+        var initializer = stmt.Initializer?.Accept(this);  // Evaluar el valor inicial de la variable
         currentScope.Define(stmt.Name.Lexeme, initializer ?? throw new Exception("Error: Inicialización de un valor nulo."));
         return null;
     }
 
     public object? VisitExpressionStatement(ExpressionStatement stmt)
     {
-        return stmt.Expression.Accept(this);
+        return stmt.Expression.Accept(this);  // Evaluar la expresión
     }
 
     public object? VisitIfStatement(IfStatement stmt)
@@ -257,8 +272,14 @@ public class SemanticAnalyzer : IVisitor<object?>
             throw new Exception("Error: La condición de la declaración 'if' no puede ser nula o no booleana.");
         }
 
-        stmt.ThenBranch.Accept(this);
-        stmt.ElseBranch?.Accept(this);
+        if ((bool)condition)
+        {
+            stmt.ThenBranch.Accept(this);
+        }
+        else
+        {
+            stmt.ElseBranch?.Accept(this);
+        }
         return null;
     }
 
@@ -301,6 +322,7 @@ public class SemanticAnalyzer : IVisitor<object?>
         Console.WriteLine("El 'while' ha terminado.");
         return null;
     }
+
     public object? VisitForStatement(ForStatement stmt)
     {
         // Crear un nuevo scope para el ciclo for
@@ -339,37 +361,25 @@ public class SemanticAnalyzer : IVisitor<object?>
         return null;
     }
 
-
     public object? VisitBlockStatement(BlockStatement stmt)
     {
-        var blockScope = currentScope.CreateChildScope();
-        var previousScope = currentScope;
-        currentScope = blockScope;
+        var blockScope = currentScope.CreateChildScope();  // Crear un nuevo scope para el bloque
+        var previousScope = currentScope;  // Guardamos el scope actual
+        currentScope = blockScope;  // Cambiamos al nuevo scope
 
         foreach (var statement in stmt.Statements)
         {
-            statement.Accept(this);
+            statement.Accept(this);  // Ejecutar cada declaración en el bloque
         }
 
-        currentScope = previousScope;
+        currentScope = previousScope;  // Restaurar el scope anterior
         return null;
     }
 
     public object? VisitReturnStatement(ReturnStatement stmt)
     {
-        if (currentReturnType == null)
-        {
-            throw new Exception("Error: La instrucción 'return' solo puede usarse dentro de una función.");
-        }
-
-        // Validar que el tipo de retorno coincida con el tipo de la función actual
-        var returnValue = stmt.Value?.Accept(this);
-        if (returnValue != null && returnValue.GetType() != currentReturnType)
-        {
-            throw new Exception($"Error: Tipo de retorno no coincide con el esperado. Se esperaba {currentReturnType}, pero se encontró {returnValue.GetType()}.");
-        }
-
-        return returnValue;
+        var returnValue = stmt.Value.Accept(this);  // Evaluar el valor que se está retornando
+        return returnValue;  // Devolver el valor a la función que lo llamó
     }
 
     public object? VisitArrayDeclaration(ArrayDeclaration stmt)

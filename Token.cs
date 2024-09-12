@@ -108,6 +108,7 @@ public enum TokenType
     STATIC,
     VOID,
     CONSOLE_WRITELINE,
+    VAR,
 
     // Otros
     EOF,

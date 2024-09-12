@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Gwent-and-more\\Compilador desde 0.csproj": {}
+    "D:\\Compilador desde 0\\Compilador desde 0.csproj": {}
   },
   "projects": {
-    "D:\\Gwent-and-more\\Compilador desde 0.csproj": {
+    "D:\\Compilador desde 0\\Compilador desde 0.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Gwent-and-more\\Compilador desde 0.csproj",
+        "projectUniqueName": "D:\\Compilador desde 0\\Compilador desde 0.csproj",
         "projectName": "Compilador desde 0",
-        "projectPath": "D:\\Gwent-and-more\\Compilador desde 0.csproj",
+        "projectPath": "D:\\Compilador desde 0\\Compilador desde 0.csproj",
         "packagesPath": "C:\\Users\\Carlo\\.nuget\\packages\\",
-        "outputPath": "D:\\Gwent-and-more\\obj\\",
+        "outputPath": "D:\\Compilador desde 0\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Carlo\\AppData\\Roaming\\NuGet\\NuGet.Config"

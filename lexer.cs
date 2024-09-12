@@ -55,7 +55,8 @@ public static class Lexer
         { "private", TokenType.PRIVATE },
         { "protected", TokenType.PROTECTED },
         { "static", TokenType.STATIC },
-        { "void", TokenType.VOID }
+        { "void", TokenType.VOID },
+        { "var", TokenType.VAR } 
     };
 
     private static readonly Dictionary<string, TokenType> multiCharTokens = new Dictionary<string, TokenType>

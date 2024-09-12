@@ -1,5 +1,23 @@
 using System.Collections.Generic;
 
+// Nodo raíz del programa
+public class ProgramNode : ASTNode
+{
+    public List<FunctionDeclaration> FunctionDeclarations { get; }
+    public List<ASTNode> Statements { get; }
+
+    public ProgramNode(List<FunctionDeclaration> functionDeclarations, List<ASTNode> statements)
+    {
+        FunctionDeclarations = functionDeclarations;
+        Statements = statements;
+    }
+
+    public override T Accept<T>(IVisitor<T> visitor)
+    {
+        return visitor.VisitProgramNode(this);
+    }
+}
+
 public abstract class ASTNode
 {
     public abstract T Accept<T>(IVisitor<T> visitor);
@@ -7,6 +25,7 @@ public abstract class ASTNode
 
 public interface IVisitor<T>
 {
+    T VisitProgramNode(ProgramNode program);  // Añadido
     T VisitBinaryExpression(BinaryExpression expr);
     T VisitUnaryExpression(UnaryExpression expr);
     T VisitLiteralExpression(LiteralExpression expr);
@@ -39,6 +58,7 @@ public interface IVisitor<T>
     T VisitContinueStatement(ContinueStatement stmt);
 }
 
+// Resto de clases de ASTNode
 public class BinaryExpression : ASTNode
 {
     public ASTNode Left { get; }
@@ -96,15 +116,7 @@ public class GroupingExpression : ASTNode
 
     public GroupingExpression(ASTNode expression)
     {
-        Console.WriteLine("Flattening nested grouping expression");
-        if (expression is GroupingExpression innerGroup)
-        {
-            Expression = innerGroup.Expression;
-        }
-        else
-        {
-            Expression = expression;
-        }
+        Expression = expression;
     }
 
     public override T Accept<T>(IVisitor<T> visitor)
@@ -112,7 +124,6 @@ public class GroupingExpression : ASTNode
         return visitor.VisitGroupingExpression(this);
     }
 }
-
 
 public class VariableExpression : ASTNode
 {
@@ -164,6 +175,7 @@ public class CallExpression : ASTNode
         return visitor.VisitCallExpression(this);
     }
 }
+
 public class LogicalExpression : ASTNode
 {
     public ASTNode Left { get; }
@@ -291,7 +303,6 @@ public class ForStatement : ASTNode
     {
         return visitor.VisitForStatement(this);
     }
-
 }
 
 public class BlockStatement : ASTNode
@@ -325,6 +336,9 @@ public class ReturnStatement : ASTNode
         return visitor.VisitReturnStatement(this);
     }
 }
+
+// Continúan las demás clases (ArrayDeclaration, etc.)...
+
 public class SwitchStatement : ASTNode
 {
     public ASTNode Expression { get; }
